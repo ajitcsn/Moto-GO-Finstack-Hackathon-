@@ -1,0 +1,34 @@
+# Pilot-shaped stack: Postgres 16, Redis (job queue when you swap the in-process worker for RQ/Celery),
+# MinIO (S3-compatible storage), the API and the web app.
+# `docker compose -f infra/docker-compose.yml up --build` then open http://localhost:8080
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: motogo, POSTGRES_PASSWORD: motogo, POSTGRES_DB: motogo }
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U motogo"], interval: 3s, retries: 20 }
+  redis:
+    image: redis:7
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment: { MINIO_ROOT_USER: minio, MINIO_ROOT_PASSWORD: minio12345 }
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [files:/data]
+  api:
+    build: ../api
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql+psycopg://motogo:motogo@db:5432/motogo
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-real-deployments}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-change-me-too}
+      PUBLIC_API_URL: http://localhost:8080
+      CORS_ORIGINS: http://localhost:8080
+      # Mock adapters until FinStack / the lender confirm access. Flip one at a time: ADAPTER_KYC=live ...
+      ADAPTER_STORAGE: local
+    volumes: [apifiles:/app/.storage]
+  web:
+    build: ../web
+    depends_on: [api]
+    ports: ["8080:80"]
+volumes: { dbdata: {}, files: {}, apifiles: {} }
