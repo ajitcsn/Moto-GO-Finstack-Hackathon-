@@ -78,10 +78,10 @@ export default function Profile() {
           <h2 className="text-lg">Your data</h2>
           <div className="flex flex-wrap gap-3">
             <button className="btn-ghost" onClick={exportData}><Download className="h-4 w-4" aria-hidden /> Download my data</button>
-            {!confirmDelete ? <button className="btn-ghost text-ball-dark" onClick={() => setConfirmDelete(true)}><Trash2 className="h-4 w-4" aria-hidden /> Request deletion</button> : (
-              <span className={cx("flex flex-wrap items-center gap-2 rounded-2xl border-2 border-ball/40 p-2")}>
+            {!confirmDelete ? <button className="btn-ghost text-coral-dark" onClick={() => setConfirmDelete(true)}><Trash2 className="h-4 w-4" aria-hidden /> Request deletion</button> : (
+              <span className={cx("flex flex-wrap items-center gap-2 rounded-2xl border-2 border-coral/40 p-2")}>
                 <span className="px-2 text-sm font-bold">Ask support to delete your account and data?</span>
-                <button className="btn-ball" disabled={del.isPending} onClick={() => del.mutate()}>Yes, request deletion</button>
+                <button className="btn-coral" disabled={del.isPending} onClick={() => del.mutate()}>Yes, request deletion</button>
                 <button className="btn-quiet" onClick={() => setConfirmDelete(false)}>Keep my account</button>
               </span>)}
           </div>

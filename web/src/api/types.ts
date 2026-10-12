@@ -37,6 +37,7 @@ export interface GarageHome {
   total_equity: { low: number; high: number; counted: number; of: number } | null;
   care_task: { vehicle_id: string; vehicle: string; kind: string; due: string; overdue: boolean } | null;
   next_goal: { id: string; label: string; price_assumption: number; target_date: string | null; savings: number; monthly: number } | null;
+  suggestions: Model[];
   collection: Progress;
 }
 export interface Goal {

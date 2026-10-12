@@ -4,9 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Bookmark, BookmarkCheck, Flag, Route as RouteIcon } from "lucide-react";
 import { api, ApiError } from "@/api/client";
 import { useInvalidate, useMe, usePassport } from "@/api/hooks";
-import { Callout, Disc, ErrorBox, PageHeader, Sheet, Spinner, useToast } from "@/components/ui";
-import { asOf, inr, SEGMENT_COLOR, SEGMENT_LABEL, shortInr } from "@/lib/format";
-import { BadgeChips, isDiscovered, specLine } from "./parts";
+import { Callout, ErrorBox, PageHeader, Sheet, Spinner, useToast } from "@/components/ui";
+import { VehicleImage } from "@/components/VehicleImage";
+import { asOf, inr, SEGMENT_LABEL, shortInr } from "@/lib/format";
+import { BadgeChips, specLine } from "./parts";
 
 const ACTIVITY = [
   ["spotted", "Spotted one on the road"], ["ridden", "Rode one"], ["driven", "Drove one"], ["test_driven", "Test-drove one"],
@@ -46,7 +47,7 @@ export default function Passport() {
       <div className="grid gap-5 md:grid-cols-[1fr_340px]">
         <div className="space-y-5">
           <section className="card flex items-center gap-5 map-bg">
-            <Disc color={SEGMENT_COLOR[m.segment]} lit={isDiscovered(badges)} size={96} />
+            <VehicleImage id={m.id} label={m.label} type={m.type} className="h-28 w-40 rounded-2xl object-cover" priority />
             <div>
               <p className="text-2xl font-black">{shortInr(m.price_low)} – {shortInr(m.price_high)}</p>
               <p className="text-sm font-bold text-ink-soft">Ex-showroom range · {m.source} · {asOf(m.as_of)}</p>

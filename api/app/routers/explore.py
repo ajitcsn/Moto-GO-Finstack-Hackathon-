@@ -16,18 +16,31 @@ from ..services.garage import ACTIVITIES, SEGMENTS, ser_model
 
 router = APIRouter(tags=["explore"])
 
+# Friendly corrections keep the catalogue useful when a rider searches by the
+# common spoken spelling rather than the manufacturer's exact styling.
+SEARCH_CORRECTIONS = {
+    "marathi": "maruti", "fesino": "fascino", "bespa": "vespa", "java": "jawa",
+    "expulse": "xpulse", "tbs": "tvs", "icube": "iqube", "either": "ather",
+    "uben": "oben", "roar": "rorr", "rb400": "rv400", "ultraviolet": "ultraviolette",
+    "204b": "200 4v", "sd": "ktm 390", "splendor plus": "splendor+",
+    "sp160": "sp 160", "sxl150": "sxl 150", "400x": "400 x",
+}
+
 
 @router.get("/catalogue/models")
 def search_models(q: str = "", type: str | None = None, segment: str | None = None, ids: str | None = None,
                   limit: int = Query(80, le=200), db: Session = Depends(get_db)):
     qs = db.query(CatalogueModel)
+    normalized_q = q.lower()
+    for spoken, official in SEARCH_CORRECTIONS.items():
+        normalized_q = re.sub(rf"\b{re.escape(spoken)}\b", official, normalized_q)
     if ids:
         qs = qs.filter(CatalogueModel.id.in_(ids.split(",")[:6]))
     if type:
         qs = qs.filter(CatalogueModel.type == type)
     if segment:
         qs = qs.filter(CatalogueModel.segment == segment)
-    for tok in re.findall(r"[\w+]+", q.lower())[:4]:
+    for tok in re.findall(r"[\w+]+", normalized_q)[:4]:
         like = f"%{tok}%"
         qs = qs.filter(or_(CatalogueModel.make.ilike(like), CatalogueModel.model.ilike(like), CatalogueModel.variant.ilike(like)))
     return {"items": [ser_model(m) for m in qs.order_by(CatalogueModel.make, CatalogueModel.model).limit(limit)]}

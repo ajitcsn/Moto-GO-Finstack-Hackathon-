@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { api, ApiError } from "@/api/client";
 import { useInvalidate } from "@/api/hooks";
@@ -13,10 +13,12 @@ const TYPES: [VType, string][] = [["scooter", "Scooter"], ["bike", "Bike"], ["ca
 
 export default function AddVehicle() {
   const nav = useNavigate();
+  const location = useLocation();
+  const prefilled = (location.state as { model?: Model } | null)?.model;
   const toast = useToast();
   const inv = useInvalidate();
-  const [type, setType] = useState<VType>("scooter");
-  const [model, setModel] = useState<Model | null>(null);
+  const [type, setType] = useState<VType>(() => prefilled?.type ?? "scooter");
+  const [model, setModel] = useState<Model | null>(() => prefilled ?? null);
   const [manual, setManual] = useState(false);
   const [freeText, setFreeText] = useState("");
   const [variant, setVariant] = useState("");

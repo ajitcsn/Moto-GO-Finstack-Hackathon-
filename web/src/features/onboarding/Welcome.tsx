@@ -2,8 +2,9 @@ import { Link, Navigate } from "react-router-dom";
 import { ArrowRight, Compass, ShieldCheck, Wrench } from "lucide-react";
 import { useMe } from "@/api/hooks";
 import { Logo } from "@/components/AppShell";
-import { DemoBadge, Disc } from "@/components/ui";
-import { inrRange, SEGMENT_COLOR } from "@/lib/format";
+import { DemoBadge } from "@/components/ui";
+import { VehicleImage } from "@/components/VehicleImage";
+import { inrRange } from "@/lib/format";
 
 export default function Welcome() {
   const { data: me, isLoading } = useMe();
@@ -31,7 +32,7 @@ export default function Welcome() {
             <div className="card animate-floaty rotate-1 !p-6">
               <p className="chip mb-3 bg-sky-light text-sky-dark">Sample garage</p>
               <div className="flex items-center gap-4">
-                <Disc color={SEGMENT_COLOR.commute} size={56} />
+                <VehicleImage id="suzuki-access-125" label="Suzuki Access 125" type="scooter" className="h-16 w-24 rounded-2xl object-cover" priority />
                 <div>
                   <p className="text-xl font-black">Suzuki Access 125</p>
                   <p className="text-sm font-bold text-ink-mute">2021 · Pune · good condition</p>
@@ -44,9 +45,7 @@ export default function Welcome() {
                   <dd className="text-2xl font-black text-go-dark">{inrRange(40000, 50000)}</dd>
                   <dd className="text-xs font-bold text-ink-soft">Demo curve · medium confidence · illustrative</dd></div>
               </dl>
-              <div className="mt-4 flex gap-2" aria-label="Sample collection">
-                {["commute", "touring", "adventure", "performance", "ev"].map((s, i) => <Disc key={s} color={SEGMENT_COLOR[s]} size={34} lit={i < 2} />)}
-              </div>
+              <p className="mt-4 text-sm font-bold text-ink-soft">Explore commute, touring, adventure, performance and EV options.</p>
             </div>
           </div>
         </div>

@@ -5,8 +5,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { api } from "@/api/client";
 import { useGarage, useGoals, useInvalidate, useScenarios } from "@/api/hooks";
 import type { Scenario } from "@/api/types";
-import { Callout, cx, Disc, ErrorBox, PageHeader, Spinner, useDebounced, useToast } from "@/components/ui";
-import { dateFmt, inr, inrRange, SEGMENT_COLOR, shortInr } from "@/lib/format";
+import { Callout, cx, ErrorBox, PageHeader, Spinner, useDebounced, useToast } from "@/components/ui";
+import { VehicleImage } from "@/components/VehicleImage";
+import { dateFmt, inr, inrRange, shortInr } from "@/lib/format";
 
 const num = (s: string) => (s === "" ? 0 : Number(s.replace(/\D/g, "")));
 
@@ -49,7 +50,7 @@ export default function RoadTo() {
   return (
     <>
       <PageHeader back={<Link to="/roadmap" className="mb-2 inline-flex items-center gap-1 text-sm font-extrabold text-ink-soft"><ArrowLeft className="h-4 w-4" /> Roadmap</Link>}
-        title={<span className="flex items-center gap-3"><Disc color={SEGMENT_COLOR[m.segment]} size={40} />Road to {m.label}</span>}
+        title={<span className="flex items-center gap-3"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-12 w-16 rounded-xl object-cover" />Road to {m.label}</span>}
         sub={`Ex-showroom ${shortInr(m.price_low)} – ${shortInr(m.price_high)} (${m.source}). Set your own on-road price below.`} />
       <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
         <section className="card h-fit space-y-4" aria-label="Your assumptions">

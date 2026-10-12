@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { LayoutList, Network, Search } from "lucide-react";
+import { Binoculars, CarFront, KeyRound, LayoutList, Network, Search } from "lucide-react";
 import { api } from "@/api/client";
-import { useCollection, useInvalidate, useMe } from "@/api/hooks";
+import { useCollection, useInvalidate, useMe, usePassport } from "@/api/hooks";
 import type { CollectionModel } from "@/api/types";
-import { Callout, cx, Disc, ErrorBox, PageHeader, ProgressBar, SegmentDot, Sheet, Spinner, useDebounced, useToast } from "@/components/ui";
-import { SEGMENT_COLOR, shortInr } from "@/lib/format";
+import { Callout, cx, ErrorBox, PageHeader, ProgressBar, SegmentDot, Sheet, Spinner, useDebounced, useToast } from "@/components/ui";
+import { VehicleImage } from "@/components/VehicleImage";
+import { asOf, inr, shortInr } from "@/lib/format";
 import { BadgeChips, isDiscovered, specLine } from "./parts";
 
 const TYPES = [["", "All types"], ["scooter", "Scooters"], ["bike", "Bikes"], ["car", "Cars"]] as const;
@@ -98,15 +99,15 @@ function Tree({ models, segments, onOpen }: { models: CollectionModel[]; segment
                 const found = isDiscovered(m.badges);
                 const nextFound = i < items.length - 1 && isDiscovered(items[i + 1].badges);
                 return (
-                  <li key={m.id} role="treeitem" aria-selected={found} className="relative pb-3 pl-14 last:pb-0">
-                    {i < items.length - 1 && <span aria-hidden className={cx("absolute left-[21px] top-11 bottom-[-4px] w-0 border-l-[3px]", found && nextFound ? "border-solid border-ink/60" : "border-dashed border-ink/25")} />}
+                  <li key={m.id} role="treeitem" aria-selected={found} className="relative pb-3 pl-20 last:pb-0">
+                    {i < items.length - 1 && <span aria-hidden className={cx("absolute left-[28px] top-11 bottom-[-4px] w-0 border-l-[3px]", found && nextFound ? "border-solid border-ink/60" : "border-dashed border-ink/25")} />}
                     <button onClick={() => onOpen(m)} className="absolute left-0 top-0 rounded-full" aria-label={`Open ${m.label}`}>
-                      <Disc color={SEGMENT_COLOR[s.id]} lit={found} size={44} />
+                      <VehicleImage id={m.id} label={m.label} type={m.type} className="h-11 w-16 rounded-xl object-cover" />
                     </button>
                     <button onClick={() => onOpen(m)} className="block min-h-[44px] w-full text-left">
                       <span className={cx("block font-black leading-tight", !found && "text-ink-soft")}>{m.label}</span>
                       <span className="block text-xs font-bold text-ink-mute">{m.type} · from {shortInr(m.price_low)}</span>
-                      {m.badges.length > 0 && <span className="mt-1 block"><BadgeChips badges={m.badges} size="xs" /></span>}
+                      <JourneySignals badges={m.badges} />
                     </button>
                   </li>
                 );
@@ -126,8 +127,8 @@ function List({ models, onOpen }: { models: CollectionModel[]; onOpen: (m: Colle
       {models.map((m) => (
         <li key={m.id}>
           <button onClick={() => onOpen(m)} className="card flex min-h-[64px] w-full items-center gap-3 !p-3 text-left hover:border-go/60">
-            <Disc color={SEGMENT_COLOR[m.segment]} lit={isDiscovered(m.badges)} size={40} />
-            <span className="min-w-0 flex-1"><span className="block truncate font-black">{m.label}</span><span className="block text-xs font-bold text-ink-mute">{m.variant} · {m.type} · {m.segment} · from {shortInr(m.price_low)}</span></span>
+            <VehicleImage id={m.id} label={m.label} type={m.type} className="h-12 w-20 rounded-xl object-cover" />
+            <span className="min-w-0 flex-1"><span className="block truncate font-black">{m.label}</span><span className="block text-xs font-bold text-ink-mute">{m.variant} · {m.type} · {m.segment} · from {shortInr(m.price_low)}</span><JourneySignals badges={m.badges} /></span>
             <span className="hidden sm:block"><BadgeChips badges={m.badges} size="xs" /></span>
           </button>
         </li>
@@ -137,10 +138,17 @@ function List({ models, onOpen }: { models: CollectionModel[]; onOpen: (m: Colle
   );
 }
 
+/** The two fastest-to-scan journey signals stay visible in both Explore layouts. */
+function JourneySignals({ badges }: { badges: string[] }) {
+  const signals = badges.filter((badge) => badge === "spotted" || badge === "driven");
+  return signals.length ? <span className="mt-1 block"><BadgeChips badges={signals} size="xs" /></span> : null;
+}
+
 function QuickView({ m, onClose, loggedIn }: { m: CollectionModel | null; onClose: () => void; loggedIn: boolean }) {
   const nav = useNavigate();
   const toast = useToast();
   const inv = useInvalidate();
+  const { data: passport, isLoading: passportLoading } = usePassport(m?.id ?? "");
   const act = useMutation({
     mutationFn: (activity: string) => api<{ duplicate: boolean; xp_awarded: number }>("/activities", { body: { model_id: m!.id, activity } }),
     onSuccess: (r, a) => {
@@ -149,20 +157,34 @@ function QuickView({ m, onClose, loggedIn }: { m: CollectionModel | null; onClos
       onClose();
     },
   });
-  const go = (activity: string) => (loggedIn ? act.mutate(activity) : nav("/signup", { state: { next: "/explore", reason: "Create a free profile to spot and save models." } }));
+  const go = (activity: string) => (loggedIn ? act.mutate(activity) : nav("/signup", { state: { next: "/explore", reason: "Create a free profile to log your vehicle experiences." } }));
+  const bought = () => loggedIn
+    ? nav("/garage/add", { state: { model: m } })
+    : nav("/signup", { state: { next: "/explore", reason: "Create a free profile to add a vehicle to your garage." } });
+  const badges = passport?.badges ?? m?.badges ?? [];
   return (
     <Sheet open={!!m} onOpenChange={(o) => !o && onClose()} title={m?.label ?? ""} description={m ? `${m.variant} · ${m.segment}` : undefined}>
       {m && (
         <div className="space-y-4">
-          <div className="flex items-center gap-4"><Disc color={SEGMENT_COLOR[m.segment]} lit={isDiscovered(m.badges)} size={64} />
+          <div className="flex items-center gap-4"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-20 w-28 rounded-2xl object-cover" />
             <div><p className="text-lg font-black">{shortInr(m.price_low)} – {shortInr(m.price_high)}</p><p className="text-xs font-bold text-ink-mute">Ex-showroom range · {m.source} · as of {m.as_of}</p></div></div>
           <p className="font-semibold text-ink-soft">{specLine(m.specs)}</p>
-          <BadgeChips badges={m.badges} />
-          <div className="grid grid-cols-2 gap-2.5">
-            <button className="btn-go" disabled={act.isPending || m.badges.includes("spotted")} onClick={() => go("spotted")}>{m.badges.includes("spotted") ? "Spotted ✓" : "I spotted one"}</button>
-            <button className="btn-ghost" disabled={act.isPending} onClick={() => (m.badges.includes("saved") ? nav(`/explore/${m.id}`) : go("saved"))}>{m.badges.includes("saved") ? "Saved ✓" : "Save for later"}</button>
-          </div>
-          <Link to={`/explore/${m.id}`} className="btn-ghost w-full" onClick={onClose}>Open vehicle passport</Link>
+          <BadgeChips badges={badges} />
+          {passportLoading ? <p className="help">Loading vehicle details…</p> : passport && <>
+            <section className="rounded-2xl bg-mint/55 p-3"><p className="text-xs font-extrabold uppercase text-go-dark">Why it might fit</p><p className="mt-1 text-sm font-semibold text-ink-soft">{passport.fit.reason}</p></section>
+            <section className="rounded-2xl border-2 border-ink/10 p-3"><p className="text-sm font-extrabold">Illustrative running cost</p><div className="mt-2 grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs font-bold uppercase text-ink-mute">Fuel / charge yearly</p><p className="font-black">{passport.ownership_cost.yearly_running != null ? inr(passport.ownership_cost.yearly_running) : "Unavailable"}</p></div><div><p className="text-xs font-bold uppercase text-ink-mute">Insurance yearly</p><p className="font-black">{inr(passport.ownership_cost.yearly_insurance)}</p></div></div><p className="mt-2 text-xs font-semibold text-ink-mute">{passport.ownership_cost.assumptions.join(" · ")}</p></section>
+            <p className="text-xs font-bold text-ink-mute">Source: {passport.model.source} · {asOf(passport.model.as_of)}</p>
+          </>}
+          <section aria-label="What happened with this vehicle">
+            <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-ink-mute">Add to your journey</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button className="btn-go !justify-start" disabled={act.isPending || badges.includes("spotted")} onClick={() => go("spotted")}><Binoculars className="h-4 w-4" aria-hidden />{badges.includes("spotted") ? "Spotted ✓" : "Spotted"}</button>
+              <button className="btn-ghost !justify-start" disabled={act.isPending || badges.includes("driven")} onClick={() => go("driven")}><CarFront className="h-4 w-4" aria-hidden />{badges.includes("driven") ? "Drove ✓" : "Drove"}</button>
+              <button className="btn-ghost !justify-start" disabled={act.isPending || badges.includes("rented")} onClick={() => go("rented")}><KeyRound className="h-4 w-4" aria-hidden />{badges.includes("rented") ? "Rented ✓" : "Rented"}</button>
+              <button className="btn-ghost !justify-start" onClick={bought}><KeyRound className="h-4 w-4" aria-hidden />{badges.includes("owned") ? "In garage ✓" : "Bought"}</button>
+            </div>
+          </section>
+          <p className="text-center text-xs font-semibold text-ink-mute">Spotted and Drove appear as signals on your Explore cards. Bought opens a prefilled Garage entry.</p>
         </div>
       )}
     </Sheet>

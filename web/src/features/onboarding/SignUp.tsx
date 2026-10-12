@@ -120,7 +120,7 @@ export default function SignUp() {
 function Check({ id, checked, onChange, error, children }: { id: string; checked: boolean; onChange: (b: boolean) => void; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-2xl border-2 p-3 font-bold ${error ? "border-ball bg-ball-light/30" : "border-ink/15"}`}>
+      <label htmlFor={id} className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-2xl border-2 p-3 font-bold ${error ? "border-coral bg-coral-light/30" : "border-ink/15"}`}>
         <input id={id} type="checkbox" className="h-5 w-5 accent-go" checked={checked} onChange={(e) => onChange(e.target.checked)} /> <span>{children}</span>
       </label>
       {error && <p className="err" role="alert">{error}</p>}

@@ -72,7 +72,7 @@ export default function VehicleDetail() {
             <h3 className="mb-2 mt-6 text-base">Service history</h3>
             {v.care?.length ? <ul className="space-y-2">{v.care.map((c) => <li key={c.id} className="flex justify-between rounded-xl bg-mint px-3 py-2 text-sm font-bold"><span>{c.kind}</span><span>{dateFmt(c.date)} · {c.odometer.toLocaleString("en-IN")} km</span></li>)}</ul>
               : <p className="text-sm font-semibold text-ink-soft">No service logged yet.</p>}
-            <button className="btn-quiet mt-6 text-ball-dark" onClick={() => { if (confirm("Remove this vehicle from your garage?")) remove.mutate(); }}><Trash2 className="h-4 w-4" aria-hidden /> Remove from garage</button>
+            <button className="btn-quiet mt-6 text-coral-dark" onClick={() => { if (confirm("Remove this vehicle from your garage?")) remove.mutate(); }}><Trash2 className="h-4 w-4" aria-hidden /> Remove from garage</button>
           </section>
         </Tabs.Content>
       </Tabs.Root>

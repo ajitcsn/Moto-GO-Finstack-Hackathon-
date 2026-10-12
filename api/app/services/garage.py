@@ -56,6 +56,11 @@ def run_valuation(db: Session, v: Vehicle) -> Valuation:
     return val
 
 
+def value_points(maximum_value: int | None) -> int:
+    """One collection point for each ₹1,000 of the best current value estimate."""
+    return max(1, maximum_value // 1_000) if maximum_value is not None else 0
+
+
 def ser_loan(l: LoanSnapshot | None) -> dict:
     if not l:
         return {"status": "unknown", "lender": None, "principal": None, "statement_date": None, "source": "not_provided"}
@@ -89,12 +94,23 @@ def ser_vehicle(db: Session, v: Vehicle) -> dict:
 
 
 def xp_total(db: Session, user_id: str) -> int:
-    return sum(a.xp for a in db.query(Activity).filter_by(user_id=user_id))
+    activities = db.query(Activity).filter_by(user_id=user_id).all()
+    total = sum(a.xp for a in activities)
+    # Existing garages predate the ownership milestone. Count those current
+    # vehicles too, without double-counting the new activity record.
+    rewarded_models = {a.model_id for a in activities if a.kind == "owned" and a.category == "garage"}
+    for v in db.query(Vehicle).filter_by(user_id=user_id, ownership="current").filter(Vehicle.model_id.isnot(None)):
+        if v.model_id in rewarded_models:
+            continue
+        val = latest_valuation(db, v.id)
+        m = db.get(CatalogueModel, v.model_id)
+        total += value_points(val.high if val else (m.price_high if m else None))
+    return total
 
 
 def level_for(xp: int) -> dict:
     lvl = 1 + xp // 50
-    return {"level": lvl, "xp": xp, "next_at": lvl * 50, "title": ["Pit-lane Rookie", "Kerb Spotter", "Trail Scout", "Road Captain",
+    return {"level": lvl, "xp": xp, "next_at": lvl * 50, "title": ["Pit Lane Rookie", "Kerb Spotter", "Trail Scout", "Road Captain",
                                                                   "Apex Hunter", "Motorhead"][min(lvl - 1, 5)]}
 
 
@@ -103,10 +119,10 @@ def badges_by_model(db: Session, user_id: str | None) -> dict[str, set[str]]:
     if not user_id:
         return out
     for a in db.query(Activity).filter_by(user_id=user_id):
-        key = a.kind
+        # Keep the meaningful experience on the card: "Drove" is more useful
+        # than a catch-all "Experienced" label when scanning Explore.
+        key = a.category if a.kind == "experienced" and a.category else a.kind
         out.setdefault(a.model_id, set()).add(key)
-        if a.kind == "experienced" and a.category == "rented":
-            out[a.model_id].add("rented")
     for v in db.query(Vehicle).filter(Vehicle.user_id == user_id, Vehicle.model_id.isnot(None)):
         out.setdefault(v.model_id, set()).add("owned" if v.ownership == "current" else "owned_past")
     return out
@@ -131,6 +147,23 @@ def next_goal(db: Session, user_id: str) -> dict | None:
     m = db.get(CatalogueModel, g.target_model_id)
     return {"id": g.id, "label": model_label(m), "price_assumption": g.price_assumption,
             "target_date": g.target_date.isoformat() if g.target_date else None, "savings": g.savings, "monthly": g.monthly}
+
+
+def roadmap_suggestions(db: Session, user_id: str) -> list[dict]:
+    """Offer a useful next step based on the most recently added current vehicle."""
+    current = (db.query(Vehicle).filter_by(user_id=user_id, ownership="current")
+               .order_by(Vehicle.created_at.desc()).first())
+    by_type = {
+        # A scooter rider's next practical aspiration: a capable ₹3–4 lakh bike.
+        "scooter": ("triumph-speed-400", "triumph-scrambler-400-x", "ktm-390-adventure"),
+        # A bike rider's next practical step: an accessible small car.
+        "bike": ("maruti-suzuki-swift", "tata-punch", "hyundai-i20"),
+        # A car owner can consider a roomier or electric step-up.
+        "car": ("hyundai-creta", "tata-nexon-ev", "mahindra-scorpio-n"),
+    }
+    ids = by_type.get(current.type if current else "", ("maruti-suzuki-swift", "triumph-speed-400", "tata-punch"))
+    found = {m.id: m for m in db.query(CatalogueModel).filter(CatalogueModel.id.in_(ids)).all()}
+    return [ser_model(found[mid]) for mid in ids if mid in found]
 
 
 def care_task(db: Session, user_id: str) -> dict | None:
