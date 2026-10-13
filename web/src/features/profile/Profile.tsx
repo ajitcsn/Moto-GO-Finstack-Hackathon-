@@ -39,8 +39,8 @@ export default function Profile() {
         <section className="card space-y-3">
           <h2 className="text-lg">Rider level</h2>
           <p className="font-black">Lv {me.level} · {me.title} · {me.xp} XP</p>
-          <ProgressBar value={me.xp % 50} max={50} label="Progress to next level" tone="sun" />
-          <p className="help">XP comes from discovering and experiencing models. It never rewards borrowing, and it's never shared with a lender.</p>
+          <ProgressBar value={me.xp % 1000} max={1000} label="Progress to next level" tone="sun" />
+          <p className="help">Owning earns 2,000 points plus a value bonus, renting 500, test drives 250 and sightings 50. Repeat logs earn no extra points; points do not affect lender eligibility.</p>
         </section>
 
         <section className="card space-y-3" aria-label="Saved applications">

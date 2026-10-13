@@ -68,7 +68,7 @@ export default function SignUp() {
       <div className="mx-auto mb-6 flex max-w-md items-center justify-between"><Logo /><DemoBadge /></div>
       <div className="card mx-auto max-w-md !p-6">
         <h1 className="text-2xl">Create your profile</h1>
-        <p className="mt-1 font-semibold text-ink-soft">Save your garage and collection privately. We don't ask for any financial details here.</p>
+        <p className="mt-1 font-semibold text-ink-soft">Save your vehicles, dream shortlist and experience progress privately. No financial details needed here.</p>
         {loc.state?.reason && <div className="mt-4"><Callout tone="info">{loc.state.reason}</Callout></div>}
 
         <div className="mt-5 space-y-5">

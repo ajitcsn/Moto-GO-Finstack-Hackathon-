@@ -86,7 +86,7 @@ def passport(model_id: str, user: User | None = Depends(optional_user), db: Sess
 
 class ActivityIn(BaseModel):
     model_id: str
-    activity: str = Field(pattern="^(spotted|ridden|driven|rented|test_driven|past_owned|saved)$")
+    activity: str = Field(pattern="^(spotted|ridden|driven|rented|test_driven|past_owned|saved|short_rental|long_rental|intent_test_drive|intent_short_rental|intent_long_rental|intent_own)$")
     occurred_on: date | None = None
     notes: str | None = Field(None, max_length=300)
     rating: int | None = Field(None, ge=1, le=5)
@@ -102,7 +102,7 @@ def log_activity(body: ActivityIn, user: User = Depends(current_user), db: Sessi
     existing = db.query(Activity).filter_by(user_id=user.id, model_id=body.model_id, kind=kind, category=cat).first()
     if existing:  # deduplicated: no repeat discovery XP
         return {"duplicate": True, "xp_awarded": 0, "progress": garage.collection_progress(db, user.id)}
-    xp = 25 if kind == "experienced" and cat != "past_owned" else garage.XP_RULES.get(kind, 0)
+    xp = garage.experience_points(kind, cat)
     db.add(Activity(user_id=user.id, model_id=body.model_id, kind=kind, category=cat, occurred_on=body.occurred_on,
                     notes=body.notes, rating=body.rating, xp=xp))
     if kind == "saved":
@@ -135,6 +135,7 @@ class GoalIn(BaseModel):
 
 
 class ScenarioIn(BaseModel):
+    sell_current: str | None = None
     savings: int | None = Field(None, ge=0)
     monthly: int | None = Field(None, ge=0)
     price: int | None = Field(None, ge=0)
@@ -210,17 +211,26 @@ def scenarios(gid: str, body: ScenarioIn, user: User = Depends(current_user), db
     sale_est = settlement = None
     sell_vehicle = None
     use_sell = body.sell if body.sell is not None else bool(g.sell_current)
-    if use_sell and g.sell_current:
-        v = db.get(Vehicle, g.sell_current)
+    vehicle_id = body.sell_current or g.sell_current
+    _check_sell(db, user, vehicle_id)
+    if use_sell and vehicle_id:
+        v = db.get(Vehicle, vehicle_id)
         if v:
             s = garage.ser_vehicle(db, v)
             sell_vehicle = {"id": v.id, "label": s["label"], "equity": s["equity"], "valuation": s["valuation"]}
             if s["valuation"] and s["loan"]["status"] in ("none", "active") and (s["loan"]["status"] == "none" or s["loan"]["principal"] is not None):
                 sale_est, settlement = s["valuation"]["mid"], s["loan"]["principal"] or 0
-    res = build_scenarios(price=body.price or g.price_assumption, savings=g.savings if body.savings is None else body.savings,
+    cash = g.savings if body.savings is None else body.savings
+    res = build_scenarios(price=g.price_assumption if body.price is None else body.price, savings=cash,
                           monthly=g.monthly if body.monthly is None else body.monthly,
                           acquisition_costs=body.acquisition_costs, sale_estimate=sale_est, settlement=settlement,
                           sale_costs=body.sale_costs, rate_pct=body.rate_pct)
+    if sale_est is not None:
+        financed = build_scenarios(price=g.price_assumption if body.price is None else body.price,
+                                  savings=cash + sale_est - (settlement or 0) - body.sale_costs,
+                                  monthly=0, acquisition_costs=body.acquisition_costs, rate_pct=body.rate_pct)
+        res["scenarios"][-1] = financed["scenarios"][-1]
+        res["scenarios"][-1]["assumptions"].append(f"Sale estimate {sale_est}, loan payoff {settlement or 0}, sale costs {body.sale_costs}")
     res["sell_vehicle"] = sell_vehicle
     res["goal"] = ser_goal(db, g)
     res["demo_note"] = "Illustrative maths on your own assumptions. It does not predict what a lender would offer."

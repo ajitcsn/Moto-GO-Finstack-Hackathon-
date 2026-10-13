@@ -1,116 +1,67 @@
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, Compass, Plus, Route as RouteIcon, Sparkles } from "lucide-react";
-import { useGarage } from "@/api/hooks";
-import { EmptyState, ErrorBox, PageHeader, ProgressBar, Spinner } from "@/components/ui";
-import { dateFmt, inr, inrRange } from "@/lib/format";
-import { VehicleCard } from "./parts";
+import { ArrowDown, Bell, ChevronLeft, ChevronRight, HeartPulse, Plus, Sparkles, Trophy } from "lucide-react";
+import { useCollection, useDream, useGarage, useGoals } from "@/api/hooks";
+import type { Vehicle } from "@/api/types";
+import { ErrorBox, PageHeader, Spinner } from "@/components/ui";
 import { VehicleImage } from "@/components/VehicleImage";
+import { JourneyProgress } from "../explore/JourneyProgress";
+import { dateFmt, inrRange, shortInr } from "@/lib/format";
+import { EquityBlock } from "./parts";
 
 export default function Garage() {
   const { data, isLoading, error, refetch } = useGarage();
+  const dreams = useDream();
+  const goals = useGoals();
+  const collection = useCollection();
   if (isLoading) return <Spinner label="Opening your garage" />;
   if (error || !data) return <ErrorBox error={error} retry={() => refetch()} />;
-  const { vehicles, total_equity: te, care_task: care, next_goal: goal, suggestions, collection: col } = data;
-  const current = vehicles.filter((v) => v.ownership === "current");
-  const past = vehicles.filter((v) => v.ownership === "past");
-  const fleetMix = (["car", "bike", "scooter"] as const).flatMap((type) => {
-    const count = current.filter((v) => v.type === type).length;
-    return count ? `${count} ${type}${count === 1 ? "" : "s"}` : [];
-  }).join(" · ");
+  const current = data.vehicles.filter(v => v.ownership === "current");
+  const dreamModels = [...new Map([...(dreams.data?.items ?? []), ...(goals.data?.items.flatMap(g => g.target_model ? [g.target_model] : []) ?? [])].map(m => [m.id, m])).values()];
+  return <>
+    <PageHeader title="My Garage" sub="The machines you own. The ones you dream about."
+      action={<Link to="/garage/add" className="btn-go"><Plus className="h-4 w-4" aria-hidden /> Add vehicle</Link>} />
+    <section aria-labelledby="owned-vehicles" className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h2 id="owned-vehicles" className="text-xl">Your vehicles <span className="text-sm text-ink-mute">({current.length})</span></h2>
+        {data.total_equity && <div className="text-right"><p className="text-xs font-extrabold uppercase text-go-dark">Total estimated equity</p><p className="text-xl font-black">{inrRange(data.total_equity.low, data.total_equity.high)}</p>{data.total_equity.counted < data.total_equity.of && <p className="text-xs text-ink-mute">{data.total_equity.counted} of {data.total_equity.of} vehicles with known value and debt</p>}</div>}
+      </div>
+      {current.length ? <OwnedCarousel vehicles={current} /> : <div className="card space-y-3"><p>Your garage starts with the vehicle you own today.</p><Link to="/garage/add" className="btn-go">Add your vehicle · earn ownership points</Link></div>}
+    </section>
+    <div className="flex flex-col items-center gap-1 py-6 text-go-dark" aria-label="From your garage to your dream vehicles"><span className="h-6 w-px bg-go/40" aria-hidden /><ArrowDown className="h-6 w-6" aria-hidden /><span className="text-xs font-extrabold uppercase tracking-widest">Your next chapter</span></div>
+    <section id="dream-garage" aria-labelledby="dream-heading" className="relative isolate overflow-hidden rounded-3xl border border-sky/30 bg-gradient-to-br from-sky-dark/20 via-ink to-go-dark/20 p-5 sm:p-7">
+      <div className="pointer-events-none absolute -right-16 -top-20 -z-10 h-80 w-80 rounded-full bg-sky/20 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-20 -left-12 -z-10 h-64 w-64 rounded-full bg-go/20 blur-3xl" aria-hidden />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-sun-light"><Sparkles className="h-4 w-4" aria-hidden /> The dream collection</p><h2 id="dream-heading" className="mt-1 text-3xl">What comes next?</h2><p className="mt-1 text-sm text-white/70">A first drive. A weekend together. Someday, your own keys.</p></div><Link to="/explore" className="btn-ghost">Find your next dream</Link></div>
+      {dreams.isLoading || goals.isLoading ? <Spinner /> : dreams.error || goals.error ? <ErrorBox error={dreams.error || goals.error} /> : !dreamModels.length ? <div className="rounded-2xl border border-dashed border-sky/30 p-8 text-center"><Sparkles className="mx-auto mb-3 h-8 w-8 text-sun-light" aria-hidden /><p className="text-lg font-black">Leave room for something extraordinary.</p><p className="mt-2 text-sm text-white/65">Save a vehicle in Explore to start your Dream Garage.</p><Link to="/explore" className="btn-go mt-4">Discover a dream vehicle</Link></div> :
+        <div className="grid gap-5 sm:grid-cols-2">{dreamModels.map(m => <article key={m.id} className="overflow-hidden rounded-2xl border border-white/15 bg-ink/50">
+          <Link to={`/explore?model=${m.id}`} className="relative block"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-52 w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-transparent" aria-hidden /><span className="absolute right-3 top-3 flex items-center gap-1 rounded-full border border-sun/40 bg-ink/85 px-3 py-1 text-xs font-extrabold text-sun-light"><Sparkles className="h-3.5 w-3.5" aria-hidden /> Dream vehicle</span></Link>
+          <div className="space-y-3 p-4"><h3 className="text-2xl font-black">{m.label}</h3><p className="text-sm text-ink-soft">{shortInr(m.price_low)} – {shortInr(m.price_high)}</p><JourneyProgress badges={collection.data?.models.find(v => v.id === m.id)?.badges ?? []} /><Link to={`/explore?model=${m.id}`} className="btn-go w-full">Take the next step</Link></div>
+        </article>)}</div>}
+      {!!data.suggestions.length && <div className="mt-6 border-t border-white/10 pt-4"><p className="mb-3 text-sm font-bold text-white/70">Something else you might enjoy</p><div className="flex flex-wrap gap-3">{data.suggestions.filter(m => !dreamModels.some(d => d.id === m.id)).slice(0,3).map(m => <Link key={m.id} to={`/explore?model=${m.id}`} className="flex items-center gap-2 rounded-xl border border-white/15 p-2"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-10 w-14 rounded-lg object-cover" /><span className="text-sm font-bold">{m.label} →</span></Link>)}</div></div>}
+    </section>
+  </>;
+}
 
-  return (
-    <>
-      <PageHeader title="My Garage" sub="Your vehicles, what they're worth, and what needs doing next."
-        action={<Link to="/garage/add" className="btn-go"><Plus className="h-5 w-5" aria-hidden /> Add vehicle</Link>} />
-
-      {!vehicles.length ? (
-        <EmptyState title="Your garage is empty" body="Add the vehicle you own, or explore the collection first. You can do either without sharing any financial details.">
-          <Link to="/garage/add" className="btn-go"><Plus className="h-5 w-5" aria-hidden /> Add a vehicle</Link>
-          <Link to="/explore" className="btn-ghost"><Compass className="h-5 w-5" aria-hidden /> Explore the collection</Link>
-        </EmptyState>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-[1fr_320px]">
-          <section aria-label="Vehicles" className="space-y-4">
-            {current.length === 1 && current[0] && (
-              <Link to={`/garage/${current[0].id}`} className="group relative block min-h-[280px] overflow-hidden rounded-3xl bg-ink shadow-chunk">
-                <VehicleImage id={current[0].model?.id} label={current[0].label} type={current[0].type} priority className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/65 to-transparent p-6 pt-20 text-white">
-                  <p className="text-sm font-extrabold uppercase tracking-wide text-sun-light">Your ride</p>
-                  <h2 className="text-3xl font-black">{current[0].label}</h2>
-                  <p className="mt-1 font-bold text-white/80">Value, care and your next move—at a glance.</p>
-                </div>
-              </Link>
-            )}
-            {current.length > 1 && (
-              <section className="card overflow-hidden bg-ink !p-0 text-white" aria-label="Your vehicle fleet">
-                <div className="p-5 pb-3">
-                  <p className="text-sm font-extrabold uppercase tracking-wide text-sun-light">Your garage</p>
-                  <h2 className="text-2xl font-black">{current.length} current vehicles</h2>
-                  <p className="font-bold text-white/75">{fleetMix} · each vehicle keeps its own value, care and loan details.</p>
-                </div>
-                <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
-                  {current.slice(0, 3).map((v) => (
-                    <Link key={v.id} to={`/garage/${v.id}`} className="group relative min-h-32 overflow-hidden bg-ink">
-                      <VehicleImage id={v.model?.id} label={v.label} type={v.type} priority className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink to-transparent px-3 pb-2 pt-10 text-sm font-black">{v.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-            {te && (
-              <div className="card bg-go-light/50">
-                <p className="text-xs font-extrabold uppercase text-go-dark">Total estimated equity</p>
-                <p className="text-3xl font-black text-go-dark">{inrRange(te.low, te.high)}</p>
-                <p className="text-sm font-bold text-ink-soft">
-                  Based on {te.counted} of {te.of} current vehicle{te.of > 1 ? "s" : ""} with a known loan balance and valuation. Private to you.
-                </p>
-              </div>
-            )}
-            {!!current.length && <h2 className="pt-1 text-lg">Current vehicles ({current.length})</h2>}
-            <div className="grid gap-4 xl:grid-cols-2">{current.map((v) => <VehicleCard key={v.id} v={v} />)}</div>
-            {!!past.length && (
-              <>
-                <h2 className="pt-2 text-lg">Owned before ({past.length})</h2>
-                <div className="grid gap-4 xl:grid-cols-2">{past.map((v) => <VehicleCard key={v.id} v={v} />)}</div>
-              </>
-            )}
-          </section>
-
-          <aside className="space-y-4" aria-label="Summary">
-            <div className="card">
-              <h2 className="mb-2 flex items-center gap-2 text-base"><CalendarClock className="h-5 w-5 text-sun-dark" aria-hidden /> Care</h2>
-              {care ? (
-                <Link to={`/garage/${care.vehicle_id}`} className="block">
-                  <p className="font-black">{care.kind}</p>
-                  <p className="text-sm font-bold text-ink-soft">{care.vehicle} · {care.overdue ? "overdue since" : "due"} {dateFmt(care.due)}</p>
-                </Link>
-              ) : <p className="text-sm font-semibold text-ink-soft">Nothing due. Log a service on any vehicle to get a reminder date.</p>}
-            </div>
-            <div className="card">
-              <h2 className="mb-2 flex items-center gap-2 text-base"><RouteIcon className="h-5 w-5 text-sky-dark" aria-hidden /> {goal ? "Next goal" : "Suggestions"}</h2>
-              {goal ? (
-                <Link to={`/roadmap/goal/${goal.id}`} className="block">
-                  <p className="font-black">Road to {goal.label}</p>
-                  <p className="text-sm font-bold text-ink-soft">Assuming {inr(goal.price_assumption)}{goal.target_date && ` · by ${dateFmt(goal.target_date)}`}</p>
-                </Link>
-              ) : suggestions[0] ? <>
-                <Link to="/roadmap" className="flex items-center gap-3 rounded-2xl bg-mint/55 p-3 transition hover:bg-mint">
-                  <VehicleImage id={suggestions[0].id} label={suggestions[0].label} type={suggestions[0].type} className="h-14 w-20 rounded-xl object-cover" />
-                  <span className="min-w-0"><span className="block text-sm font-bold text-ink-soft">{current.length > 1 ? "Based on your current garage" : `People with a ${current[0]?.type ?? "vehicle"} like yours often enjoy`}</span><span className="block truncate font-black">{suggestions[0].label}</span></span>
-                </Link>
-                <Link to={`/experiences?model=${suggestions[0].id}`} className="btn-go mt-3 w-full">Book a rental or test drive now</Link>
-              </> : <><p className="text-sm font-semibold text-ink-soft">Pick a vehicle you'd love and see a realistic route to it.</p><Link to="/roadmap" className="btn-ghost mt-3">Explore suggestions</Link></>}
-            </div>
-            <div className="card">
-              <h2 className="mb-2 flex items-center gap-2 text-base"><Sparkles className="h-5 w-5 text-coral" aria-hidden /> Collection</h2>
-              <p className="mb-2 text-sm font-extrabold">{col.discovered} of {col.total} models discovered</p>
-              <ProgressBar value={col.discovered} max={col.total} label="Collection progress" />
-              <Link to="/explore" className="btn-ghost mt-3 w-full">Open the collection</Link>
-            </div>
-          </aside>
+function OwnedCarousel({ vehicles }: { vehicles: Vehicle[] }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [index, setIndex] = useState(0);
+  const move = (next: number) => {
+    const el = track.current?.children[next] as HTMLElement | undefined;
+    if (el && track.current) track.current.scrollTo({ left: el.offsetLeft - (track.current.children[0] as HTMLElement).offsetLeft, behavior: "smooth" });
+  };
+  return <div className="space-y-3">
+    {vehicles.length > 1 && <div className="flex items-center justify-between"><p className="text-sm text-ink-soft">Swipe to switch vehicles · {index + 1}/{vehicles.length}</p><div className="flex gap-2"><button className="btn-ghost !min-h-[40px] !p-2" aria-label="Previous vehicle" disabled={index === 0} onClick={() => move(index-1)}><ChevronLeft className="h-5 w-5" /></button><button className="btn-ghost !min-h-[40px] !p-2" aria-label="Next vehicle" disabled={index === vehicles.length-1} onClick={() => move(index+1)}><ChevronRight className="h-5 w-5" /></button></div></div>}
+    <div ref={track} className="relative grid snap-x snap-mandatory auto-cols-[100%] grid-flow-col gap-4 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" onScroll={e => { const el = e.currentTarget; setIndex(Math.round(el.scrollLeft / (el.clientWidth + 16))); }}>
+      {vehicles.map(v => { const points = v.valuation ? Math.max(1, Math.floor(v.valuation.high / 1000)) : v.model ? Math.floor(v.model.price_high/1000) : 0; return <article key={v.id} className="card min-w-0 snap-start space-y-4">
+        <div className="grid gap-5 md:grid-cols-[1fr_1.1fr]">
+          <div className="space-y-3"><Link to={`/garage/${v.id}`}><VehicleImage id={v.model?.id} label={v.label} type={v.type} priority className="h-48 w-full rounded-2xl object-cover" /><h3 className="mt-3 text-2xl font-black">{v.label}</h3><p className="text-sm text-ink-mute">{v.year} · {v.city ?? "Your vehicle"}{v.delivery_status === "pending" ? " · Delivery pending" : ""}</p></Link>
+            <div className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-sun-light/60 p-3"><p className="flex items-center gap-1 text-xs font-extrabold uppercase text-sun-dark"><Trophy className="h-4 w-4" aria-hidden /> Value points</p><p className="text-2xl font-black">{points.toLocaleString("en-IN")}</p><p className="text-xs text-ink-soft">Maximum estimate / ₹1,000</p></div><div className="rounded-xl border border-ink/15 p-3"><p className="flex items-center gap-1 text-xs font-extrabold uppercase text-ink-soft"><HeartPulse className="h-4 w-4" aria-hidden /> Health</p><p className="text-2xl font-black">—</p><p className="text-xs text-ink-mute">Assessment not available</p></div></div>
+          </div>
+          <div className="space-y-3"><EquityBlock v={v} big /><div className="rounded-xl border border-sun/30 p-3"><p className="text-sm font-black text-sun-dark">Ownership reward: {(2000+10*points).toLocaleString("en-IN")} points</p><p className="text-xs text-ink-soft">2,000 base + 10 × value points · once per model</p></div></div>
         </div>
-      )}
-    </>
-  );
+        <div className="grid gap-3 border-t border-ink/10 pt-4 sm:grid-cols-2">{["Service", "Insurance"].map(kind => { const due = v.reminders?.find(r => kind === "Insurance" ? r.kind === "Insurance renewal" : r.kind !== "Insurance renewal"); return <Link key={kind} to={`/garage/${v.id}?tab=care`} className="rounded-xl bg-mint/55 p-3"><p className="flex items-center gap-2 text-sm font-extrabold"><Bell className="h-4 w-4 text-sun-dark" aria-hidden /> {kind} reminder</p><p className="mt-1 text-sm text-ink-soft">{due ? `${due.kind} · ${dateFmt(due.due)}` : "Set a reminder →"}</p></Link>; })}</div>
+      </article>; })}
+    </div>
+    {vehicles.length > 1 && <div className="flex justify-center gap-2">{vehicles.map((v,i) => <button key={v.id} aria-label={`Show ${v.label}`} aria-pressed={i===index} onClick={() => move(i)} className={`h-2 rounded-full transition-all ${i===index ? "w-6 bg-go" : "w-2 bg-ink/20"}`} />)}</div>}
+  </div>;
 }

@@ -4,6 +4,8 @@ import { Bike, CarFront } from "lucide-react";
 type VehicleType = "car" | "bike" | "scooter";
 
 const curated: Record<string, string> = {
+  // Official MG Comet EV asset; avoid Wikipedia search returning a different MG model.
+  "mg-comet-ev": "https://mgmotor.scene7.com/is/image/mgmotor/hd-img-dsc-068?fit=constrain&fmt=webp-alpha&qlt=85&resMode=bisharp&wid=1200",
   "suzuki-access-125": "https://cdn-s3.autocarindia.com/suzuki/Access%20125/_AAB6535.JPG?fm=auto&q=80&w=1600",
   "royal-enfield-hunter-350": "https://images.91wheels.com/assets/b_images/gallery/royalenfield/hunter-350/royalenfield-hunter-350-6-1768629130.png?q=80&w=1600",
   "maruti-suzuki-swift": "https://www.marutisuzuki.com/images/arenabrandimages/color-variant/car-02.webp",

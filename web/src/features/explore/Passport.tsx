@@ -32,7 +32,7 @@ export default function Passport() {
 
   const plan = useMutation({
     mutationFn: () => api<{ id: string }>("/goals", { body: { target_model_id: modelId } }),
-    onSuccess: (g) => { inv("goals", "garage"); nav(`/roadmap/goal/${g.id}`); },
+    onSuccess: (g) => { inv("goals", "garage"); nav(`/ownership/${g.id}`); },
   });
 
   if (isLoading) return <Spinner />;
@@ -101,7 +101,7 @@ function LogSheet({ open, onOpenChange, modelId, label, onDone }: { open: boolea
           <div><label className="label" htmlFor="arate">Rating</label><select id="arate" className="input" value={rating} onChange={(e) => setRating(e.target.value)}><option value="">—</option>{[1, 2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}</select></div>
         </div>
         {log.error instanceof ApiError && <p className="err" role="alert">{log.error.message}</p>}
-        <p className="help">Rewards: spotted +10, ridden/driven/rented +25, test-driven +25, each once per model. No XP for ownership or anything financial.</p>
+        <p className="help">Rewards: spotted +50, driven/ridden or test drive +250, rental +500, each once per model and activity. Ownership in Garage earns 2,000 plus a value bonus. Borrowing earns no points.</p>
         <button className="btn-go w-full" disabled={log.isPending} onClick={() => log.mutate()}>{log.isPending ? "Saving…" : "Save to passport"}</button>
       </div>
     </Sheet>

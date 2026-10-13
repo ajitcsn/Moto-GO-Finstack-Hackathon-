@@ -131,7 +131,7 @@ def add_vehicle(body: VehicleIn, user: User = Depends(current_user), db: Session
         ).first()
         if not already_awarded:
             db.add(Activity(user_id=user.id, model_id=m.id, kind="owned", category="garage",
-                            xp=garage.value_points(valuation.high)))
+                            xp=garage.ownership_points(valuation.high), provenance="ownership_v2"))
     core.track("vehicle_added", vehicle=v.id)
     if first:
         core.track("garage_created", user=user.id)

@@ -35,7 +35,7 @@ export default function AddVehicle() {
 
   const add = useMutation({
     mutationFn: (body: unknown) => api<Vehicle>("/vehicles", { body }),
-    onSuccess: (v) => { inv("garage", "vehicles", "collection"); toast("Added to your garage"); nav(`/garage/${v.id}`); },
+    onSuccess: (v) => { inv("garage", "vehicles", "collection", "me"); toast("Added to your garage · ownership points earned"); nav(`/garage/${v.id}`); },
     onError: (e) => { if (e instanceof ApiError && e.field) setErrs({ [e.field]: e.message }); else setErrs({ form: (e as Error).message }); },
   });
 

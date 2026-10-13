@@ -12,6 +12,8 @@ export const BADGES: Record<string, { label: string; icon: typeof Bookmark; tone
   owned_past: { label: "Owned before", icon: KeyRound, tone: "bg-ink/10 text-ink" },
   past_owned: { label: "Owned before", icon: KeyRound, tone: "bg-ink/10 text-ink" },
   rented: { label: "Rented", icon: Bike, tone: "bg-go-light text-go-dark" },
+  short_rental: { label: "Short rental", icon: KeyRound, tone: "bg-go-light text-go-dark" },
+  long_rental: { label: "Long rental", icon: KeyRound, tone: "bg-go-light text-go-dark" },
 };
 
 export function BadgeChips({ badges, size = "sm" }: { badges: string[]; size?: "sm" | "xs" }) {

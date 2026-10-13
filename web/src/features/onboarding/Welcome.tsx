@@ -17,7 +17,7 @@ export default function Welcome() {
           <div>
             <h1 className="text-4xl leading-[1.05] sm:text-5xl">Your automotive life, <span className="text-go-dark">mapped.</span></h1>
             <p className="mt-4 max-w-md text-lg font-bold text-ink-soft">
-              A garage you can maintain. A collection you can explore. A realistic path to what comes next. No paperwork to start.
+              Keep track of your vehicle, discover your next drive, and try, rent or own it at your pace. No paperwork to start.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/signup" className="btn-go text-base">Build my garage <ArrowRight className="h-5 w-5" aria-hidden /></Link>
@@ -53,7 +53,7 @@ export default function Welcome() {
 
       <section className="mx-auto grid max-w-5xl gap-4 px-4 py-12 md:grid-cols-3 md:px-10">
         {[
-          [Wrench, "Useful every week", "Garage, care reminders and a collection that rewards discovery, never spending."],
+          [Wrench, "Useful every week", "Your vehicle value, service and insurance reminders, and a shortlist of what comes next."],
           [Compass, "Plan, don't pressure", "Compare saving, buying used, selling and financing on assumptions you can see."],
           [ShieldCheck, "Finance only when you ask", "Opt in, see the lender and purpose first, and only provide what is missing."],
         ].map(([Icon, t, b]) => {

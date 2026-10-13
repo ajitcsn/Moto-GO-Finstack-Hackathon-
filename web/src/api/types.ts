@@ -19,6 +19,7 @@ export interface Equity {
   known: boolean; reason: string | null; low: number | null; high: number | null; negative?: boolean; confidence: string | null;
 }
 export interface Vehicle {
+  reminders?: { kind: string; due: string }[];
   id: string; type: VType; model: Model | null; label: string; verified_model: boolean; free_text_model: string | null;
   variant: string | null; year: number; ownership: "current" | "past"; city: string | null; odometer: number | null;
   condition: string | null; owners: number | null; accident_flag: boolean | null; modified_flag: boolean | null;
