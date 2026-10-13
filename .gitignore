@@ -8,6 +8,7 @@ __pycache__/
 *.db-shm
 .storage/
 .env
+.vercel/
 test-results/
 playwright-report/
 *.log

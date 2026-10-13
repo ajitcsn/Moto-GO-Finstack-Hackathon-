@@ -72,7 +72,7 @@ test("catalogue EMI opens eligibility choices, calculator carries the plan and r
     await page.getByLabel("Tenure", { exact: true }).selectOption("48");
     await calculator.getByRole("button", { name: "Explore financing", exact: true }).click();
     await expect(page).toHaveURL(/\/explore\?eligibility=mg-comet-ev&goal=.+&rate=9.5&tenure=48#eligibility$/);
-    await expect(page.getByRole("region", { name: "External onboarding status" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "External onboarding status" })).toContainText("Not started");
     await eligibility.getByRole("link", { name: "Loan calculator", exact: true }).click();
     await expect(page.getByLabel("Vehicle price (₹)")).toHaveValue("900000");
     await expect(page.getByLabel("Cash down payment (₹)")).toHaveValue("200000");
@@ -88,6 +88,7 @@ test("catalogue EMI opens eligibility choices, calculator carries the plan and r
 test("Explore offers an explicit eligibility entry instead of the long EMI disclaimer", async ({ page }) => {
   await page.goto("/explore");
   const entry = page.getByRole("region", { name: "Loan eligibility" });
+  await expect(entry.getByRole("region", { name: "External onboarding status" })).toContainText("Not started");
   await expect(entry).toContainText("You will be asked to fill out your details");
   await expect(entry).not.toContainText("Current lender supports two-wheelers");
   const button = entry.getByRole("link", { name: "Check eligibility with FinStack" });
@@ -123,7 +124,7 @@ test("onboarding handoff is acknowledged in Loans and scoped to the account", as
   await page.context().clearCookies();
   await page.goto("/explore");
   await expect(page.getByRole("heading", { name: "Explore", exact: true })).toBeVisible();
-  await expect(page.getByRole("region", { name: "External onboarding status" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "External onboarding status" })).toContainText("Not started");
 });
 
 test("bikes precede cars and vehicle panel financing leads to the eligibility choice", async ({ page }) => {

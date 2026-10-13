@@ -18,7 +18,13 @@ export default function Garage() {
   if (error || !data) return <ErrorBox error={error} retry={() => refetch()} />;
   const current = data.vehicles.filter(v => v.ownership === "current");
   const dreamModels = [...new Map([...(dreams.data?.items ?? []), ...(goals.data?.items.flatMap(g => g.target_model ? [g.target_model] : []) ?? [])].map(m => [m.id, m])).values()];
-  const dreamCards = dreamModels.length ? dreamModels : data.suggestions;
+  const baseline = Math.max(0, ...current.map(v => v.valuation?.high ?? v.model?.price_high ?? 0));
+  const candidates = [...new Map([...dreamModels, ...data.suggestions].map(m => [m.id, m])).values()];
+  const dreamCards = (["bike", "car"] as const).flatMap(type => {
+    const floor = type === "bike" ? 300_000 : 1_200_000;
+    const match = candidates.find(m => m.type === type && m.price_low >= Math.max(baseline * 2, floor) && !current.some(v => v.model?.id === m.id));
+    return match ? [match] : [];
+  });
   return <>
     <PageHeader title="My Garage" sub="The machines you own. The ones you dream about."
       action={<Link to="/garage/add" className="btn-go"><Plus className="h-4 w-4" aria-hidden /> Add vehicle</Link>} />
@@ -33,12 +39,11 @@ export default function Garage() {
       <div className="pointer-events-none absolute -right-16 -top-20 -z-10 h-80 w-80 rounded-full bg-sky/20 blur-3xl" aria-hidden />
       <div className="pointer-events-none absolute -bottom-20 -left-12 -z-10 h-64 w-64 rounded-full bg-go/20 blur-3xl" aria-hidden />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-sun-light"><Sparkles className="h-4 w-4" aria-hidden /> The dream collection</p><h2 id="dream-heading" className="mt-1 text-3xl">What comes next?</h2><p className="mt-1 text-sm text-white/70">A first drive. A weekend together. Someday, your own keys.</p></div><Link to="/explore" className="btn-ghost">Find your next dream</Link></div>
-      {dreams.isLoading || goals.isLoading ? <Spinner /> : dreams.error || goals.error ? <ErrorBox error={dreams.error || goals.error} /> : !dreamCards.length ? <div className="rounded-2xl border border-dashed border-sky/30 p-8 text-center"><Sparkles className="mx-auto mb-3 h-8 w-8 text-sun-light" aria-hidden /><p className="text-lg font-black">Leave room for something extraordinary.</p><p className="mt-2 text-sm text-white/65">Save a vehicle in Explore to start your Dream Garage.</p><Link to="/explore" className="btn-go mt-4">Discover a dream vehicle</Link></div> :
+      {dreams.isLoading || goals.isLoading ? <Spinner /> : dreams.error || goals.error ? <ErrorBox error={dreams.error || goals.error} /> : !dreamCards.length ? <div className="rounded-2xl border border-dashed border-sky/30 p-8 text-center"><Sparkles className="mx-auto mb-3 h-8 w-8 text-sun-light" aria-hidden /><p className="text-lg font-black">Leave room for something extraordinary.</p><p className="mt-2 text-sm text-white/65">No sufficiently higher-value matches are available in the current catalogue. Your saved dreams are still available in Explore.</p><Link to="/explore" className="btn-go mt-4">Discover a dream vehicle</Link></div> :
         <div className="grid gap-5 sm:grid-cols-2">{dreamCards.map(m => <article key={m.id} className="overflow-hidden rounded-2xl border border-white/15 bg-ink/50">
-          <Link to={`/explore?model=${m.id}`} className="relative block"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-52 w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-transparent" aria-hidden /><span className="absolute right-3 top-3 flex items-center gap-1 rounded-full border border-sun/40 bg-ink/85 px-3 py-1 text-xs font-extrabold text-sun-light"><Sparkles className="h-3.5 w-3.5" aria-hidden /> Dream vehicle</span></Link>
+          <Link to={`/explore?model=${m.id}`} className="relative block"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-52 w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-transparent" aria-hidden /><span className="absolute right-3 top-3 flex items-center gap-1 rounded-full border border-sun/40 bg-ink/85 px-3 py-1 text-xs font-extrabold text-sun-light"><Sparkles className="h-3.5 w-3.5" aria-hidden /> Dream {m.type}</span></Link>
           <div className="space-y-3 p-4"><h3 className="text-2xl font-black">{m.label}</h3><p className="text-sm text-ink-soft">{shortInr(m.price_low)} – {shortInr(m.price_high)}</p><JourneyProgress badges={collection.data?.models.find(v => v.id === m.id)?.badges ?? []} /><Link to={`/explore?model=${m.id}`} className="btn-go w-full">Take the next step</Link></div>
         </article>)}</div>}
-      {!!dreamModels.length && !!data.suggestions.length && <div className="mt-6 border-t border-white/10 pt-4"><p className="mb-3 text-sm font-bold text-white/70">Dream suggestions</p><div className="grid gap-3 sm:grid-cols-2">{data.suggestions.slice(0,2).map(m => <Link key={m.id} to={`/explore?model=${m.id}`} className="flex items-center gap-3 rounded-xl border border-white/15 p-3"><VehicleImage id={m.id} label={m.label} type={m.type} className="h-16 w-24 shrink-0 rounded-lg object-cover" /><div><p className="text-[10px] font-bold uppercase tracking-widest text-sun-light">Dream {m.type}</p><p className="text-lg font-black">{m.label} →</p><p className="text-xs text-white/70">{shortInr(m.price_low)} – {shortInr(m.price_high)}</p></div></Link>)}</div></div>}
     </section>
   </>;
 }

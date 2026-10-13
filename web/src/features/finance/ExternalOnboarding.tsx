@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { ArrowUpRight, Clock3 } from "lucide-react";
+import { ArrowUpRight, Circle, CircleDot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMe } from "@/api/hooks";
 import type { Model } from "@/api/types";
@@ -42,20 +42,24 @@ export function EligibilityLink() {
 
 export function EligibilitySection({ model, planParams }: { model?: Model; planParams?: string }) {
   const calculator = model ? `/loans?model=${encodeURIComponent(model.id)}${planParams ? `&${planParams}` : ""}#emi-calculator` : "/loans#emi-calculator";
-  return <section id="eligibility" className="card explore-eligibility mb-5 scroll-mt-28 space-y-3 !p-4" aria-label="Loan eligibility">
+  return <section id="eligibility" className="card explore-eligibility mb-5 scroll-mt-28 !p-4" aria-label="Loan eligibility">
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]"><div className="min-w-0 space-y-3">
     <div><h2 className="text-2xl">Check eligibility</h2><p className="mt-1 text-sm text-ink-soft">Find the loans you are eligible for—or work out your monthly payment first.</p></div>
     {model && <div className="flex items-center gap-3 rounded-xl border border-sky/30 p-2"><VehicleImage id={model.id} label={model.label} type={model.type} className="h-12 w-20 rounded-lg object-cover" /><div><p className="text-[10px] uppercase text-ink-mute">Selected vehicle</p><p className="text-lg font-black">{model.label}</p></div></div>}
     <div className="flex flex-wrap gap-2"><Link to={calculator} className="btn-ghost">Loan calculator</Link><EligibilityLink /></div>
     <div className="max-w-2xl"><p className="text-sm font-semibold text-ink-soft">You will be asked to fill out your details and review consent in the FinStack workflow before any credit check or lender assessment.</p><p className="mt-1 text-xs text-ink-mute">The calculator does not check your credit. FinStack opens externally; vehicle details and plan amounts are not sent automatically. Eligibility and offers depend on assessment.</p></div>
+    </div><ExternalOnboardingStatus embedded /></div>
   </section>;
 }
 
-export function ExternalOnboardingStatus({ className }: { className?: string }) {
+export function ExternalOnboardingStatus({ className, embedded = false }: { className?: string; embedded?: boolean }) {
   const { startedAt } = useExternalOnboarding();
-  if (!startedAt) return null;
-  const when = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(startedAt));
-  return <section aria-label="External onboarding status" className={cx("card flex items-start gap-3 !p-4", className)}>
-    <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-sky-dark" aria-hidden />
-    <div><p role="status" className="font-black text-sky-dark">Onboarding started</p><p className="mt-1 text-xs text-ink-soft">You chose to start external onboarding. Completion and eligibility results are not synced to Moto Go yet.</p><p className="mt-1 text-xs text-ink-mute">Started <time dateTime={startedAt}>{when} IST</time> · Saved on this browser only.</p></div>
+  const when = startedAt ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(startedAt)) : null;
+  const Icon = startedAt ? CircleDot : Circle;
+  return <section aria-label="External onboarding status" className={cx("space-y-3 p-4", embedded ? "rounded-xl border border-sky/30 bg-ink/20" : "card", className)}>
+    <h3 className="text-lg">Onboarding journey</h3>
+    <p role="status" className={cx("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold", startedAt ? "border-go/40 bg-go-light text-go-dark" : "border-ink/20 bg-ink/10 text-ink-soft")}><Icon className="h-4 w-4 shrink-0" aria-hidden />{startedAt ? "Onboarding started" : "Not started"}</p>
+    <p className="text-xs leading-relaxed text-ink-soft">{startedAt ? "You chose to start external onboarding. Completion and eligibility results are not synced to Moto Go yet." : "Choose Check eligibility with FinStack when you're ready to start. Using the calculator does not start onboarding or check your credit."}</p>
+    {startedAt && <p className="text-xs text-ink-mute">Started <time dateTime={startedAt}>{when} IST</time> · Saved on this browser only.</p>}
   </section>;
 }

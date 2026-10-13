@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+test("feed uses compact 16:9 thumbnails with vehicle details alongside", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/forum");
+  for (const name of ["Read Tata Punch EV review on Autocar India", "Watch Tata Punch EV review by MotorInc on YouTube"]) {
+    const frame = page.getByRole("link", { name, exact: true });
+    const bounds = await frame.boundingBox();
+    expect(bounds!.height / bounds!.width).toBeCloseTo(9 / 16, 2);
+    expect(bounds!.width).toBe(208);
+    await expect(frame.locator("img, [aria-label]").first()).toHaveCSS("object-fit", "cover");
+  }
+  const video = page.getByRole("article", { name: "MotorInc · Tata Punch EV", exact: true });
+  const [image, vehicle] = await Promise.all([video.getByRole("link", { name: /Watch Tata Punch/ }).boundingBox(), video.getByText("Tata Punch EV", { exact: true }).boundingBox()]);
+  expect(vehicle!.x).toBeGreaterThan(image!.x + image!.width);
+  await page.setViewportSize({ width: 375, height: 812 });
+  const mobile = await video.getByRole("link", { name: /Watch Tata Punch/ }).boundingBox();
+  expect(mobile!.width).toBe(112);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
 test("Forum is the third screen and contains attributed reviews, videos and demo updates", async ({ page }) => {
   await page.goto("/explore");
   await expect(page.getByRole("heading", { name: "Explore", exact: true })).toBeVisible();
