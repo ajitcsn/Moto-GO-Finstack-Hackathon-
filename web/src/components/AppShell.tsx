@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
-import { BarChart3, Compass, Gauge, Warehouse } from "lucide-react";
+import { Compass, Gauge, Landmark, MessagesSquare, Settings, Warehouse } from "lucide-react";
 import { useMe } from "@/api/hooks";
 import { cx, DemoBadge } from "./ui";
 
 const NAV = [
   { to: "/garage", label: "Garage", icon: Warehouse },
   { to: "/explore", label: "Explore", icon: Compass },
-  { to: "/insights", label: "Insights", icon: BarChart3 },
+  { to: "/forum", label: "Forum", icon: MessagesSquare },
+  { to: "/loans", label: "Loans", icon: Landmark },
 ] as const;
 
 export function Logo() {
@@ -39,22 +40,23 @@ export function AppShell() {
 
   return (
     <div className="min-h-dvh bg-paper">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b-2 border-ink/10 bg-white/95 px-4 py-3 backdrop-blur md:px-8">
+      <header className="sticky top-0 z-30 flex min-h-[72px] items-center justify-between gap-3 border-b-2 border-ink/10 bg-white/95 px-4 py-2 backdrop-blur md:px-6 xl:px-16">
         <Logo />
         <div className="flex min-w-0 items-center justify-end gap-2">
           <span className="hidden sm:inline-flex"><DemoBadge /></span>
           {me ? (
-            <Link to="/insights" className="min-w-0 max-w-[46vw] rounded-xl bg-go-light px-3 py-1.5 text-right text-xs font-extrabold text-go-dark sm:max-w-xs" title={`Level ${me.level} · ${me.title} · ${me.xp.toLocaleString("en-IN")} points`} aria-label={`Level ${me.level}, ${me.title}, ${me.xp} points. Open Insights`}>
-              <span className="flex min-w-0 items-center justify-end gap-1.5"><span className="shrink-0">Lv {me.level}</span><span className="truncate">{me.title}</span></span>
-              <span className="block font-mono text-sm text-sun-dark">{me.xp.toLocaleString("en-IN")} pts</span>
+            <Link to="/settings#progress" className="flex min-w-0 max-w-[58vw] items-center gap-2 rounded-xl bg-go-light px-3 py-2 font-extrabold text-go-dark sm:max-w-none sm:gap-5 sm:px-4" title={`Level ${me.level} · ${me.title} · ${me.xp.toLocaleString("en-IN")} points`} aria-label={`Level ${me.level}, ${me.title}, ${me.xp} points. Open Settings`}>
+              <span className="min-w-0 text-left"><span className="block font-mono text-[10px] uppercase tracking-wider sm:text-xs">Level {me.level}</span><span className="block break-words text-sm leading-tight sm:text-lg">{me.title}</span></span>
+              <span className="shrink-0 border-l border-go/25 pl-2 font-mono text-sm text-sun-dark sm:pl-5 sm:text-lg">{me.xp.toLocaleString("en-IN")} pts</span>
             </Link>
           ) : <Link to="/signup" className="btn-go !min-h-[42px] !px-4 text-sm">Sign up</Link>}
+          {me && <Link to="/settings" className="btn-ghost shrink-0 !min-h-[40px] !px-2.5" aria-label="Account and settings" title="Account & settings"><Settings className="h-5 w-5" aria-hidden /></Link>}
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-5xl overflow-x-hidden px-4 pb-28 pt-6 md:px-8 md:pt-10"><Outlet /></main>
+      <main id="main" className="w-full overflow-x-hidden px-4 pb-28 pt-6 md:px-6 md:pt-10 xl:px-16"><Outlet /></main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t-2 border-ink/10 bg-white px-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-8px_30px_rgba(30,45,60,0.08)]" aria-label="Main">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t-2 border-ink/10 bg-white px-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-8px_30px_rgba(30,45,60,0.08)]" aria-label="Main">
         {NAV.map(({ to, label, icon: Icon }, index) => (
           <NavLink key={to} to={to} title={`Press ${index + 1} to open ${label}`} aria-label={`${label}. Hotkey ${index + 1}`} className={({ isActive }) => cx("flex min-h-[58px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-extrabold transition sm:text-xs",
             isActive ? "bg-go-light text-go-dark" : "text-ink-mute hover:bg-ink/5")}>

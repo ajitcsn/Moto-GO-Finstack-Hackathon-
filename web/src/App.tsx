@@ -11,6 +11,7 @@ const Garage = lazy(() => import("./features/garage/Garage"));
 const AddVehicle = lazy(() => import("./features/garage/AddVehicle"));
 const VehicleDetail = lazy(() => import("./features/garage/VehicleDetail"));
 const Explore = lazy(() => import("./features/explore/Explore"));
+const Forum = lazy(() => import("./features/forum/Forum"));
 const Passport = lazy(() => import("./features/explore/Passport"));
 const Experiences = lazy(() => import("./features/explore/Experiences"));
 const RoadTo = lazy(() => import("./features/roadmap/RoadTo"));
@@ -33,6 +34,7 @@ export default function App() {
 
           <Route element={<AppShell />}>
             <Route path="/explore" element={<Explore />} />
+            <Route path="/forum" element={<Forum />} />
             <Route path="/explore/:modelId" element={<Passport />} />
             <Route path="/capture" element={<Navigate to="/explore#capture" replace />} />
             <Route path="/experiences" element={<Experiences />} />
@@ -46,8 +48,10 @@ export default function App() {
               <Route path="/roadmap/compare" element={<Navigate to="/explore" replace />} />
               <Route path="/ownership/:id" element={<RoadTo />} />
               <Route path="/roadmap/goal/:id" element={<RoadTo />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/insights" element={<Insights />} />
+              <Route path="/settings" element={<Profile />} />
+              <Route path="/profile" element={<Navigate to="/settings" replace />} />
+              <Route path="/loans" element={<Insights />} />
+              <Route path="/insights" element={<Navigate to="/loans" replace />} />
             </Route>
             <Route element={<RequireAuth role="ops" />}>
               <Route path="/ops" element={<Ops />} />

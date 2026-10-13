@@ -7,7 +7,7 @@ export const BADGES: Record<string, { label: string; icon: typeof Bookmark; tone
   experienced: { label: "Experienced", icon: Flag, tone: "bg-go-light text-go-dark" },
   ridden: { label: "Rode", icon: Bike, tone: "bg-go-light text-go-dark" },
   driven: { label: "Drove", icon: Navigation, tone: "bg-go-light text-go-dark" },
-  test_driven: { label: "Test-driven", icon: Trophy, tone: "bg-coral-light text-coral-dark" },
+  test_driven: { label: "Driven", icon: Trophy, tone: "bg-coral-light text-coral-dark" },
   owned: { label: "Owned", icon: Key, tone: "bg-ink text-white" },
   owned_past: { label: "Owned before", icon: KeyRound, tone: "bg-ink/10 text-ink" },
   past_owned: { label: "Owned before", icon: KeyRound, tone: "bg-ink/10 text-ink" },

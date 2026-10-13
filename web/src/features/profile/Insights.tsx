@@ -1,37 +1,34 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { useApplications, useCollection, useGarage, useGoals, useMe, useOffers } from "@/api/hooks";
+import { useApplications, useGarage, useGoals, useOffers } from "@/api/hooks";
 import type { Application } from "@/api/types";
 import { ErrorBox, PageHeader, Spinner } from "@/components/ui";
-import { PointsSummary } from "@/components/PointsSummary";
 import { VehicleImage } from "@/components/VehicleImage";
 import { dateFmt, inr, inrRange } from "@/lib/format";
 import { STATE_LABEL } from "../finance/Frame";
 import { LoanCalculator } from "./LoanCalculator";
+import { ExternalOnboardingStatus } from "../finance/ExternalOnboarding";
 
 type FinancialProfile = { application_id: string; declared_monthly_income: number | null; declared_existing_emis: number | null; employment: string | null; identity_status: string; kyc_status: string };
 
 export default function Insights() {
-  const me = useMe();
   const garage = useGarage();
-  const collection = useCollection();
   const apps = useApplications();
   const goals = useGoals();
   const insights = useQuery({ queryKey: ["insights"], queryFn: () => api<{ financial_profiles: FinancialProfile[] }>("/insights") });
-  if (me.isLoading || garage.isLoading || collection.isLoading) return <Spinner label="Gathering your Insights" />;
-  if (garage.error || collection.error) return <ErrorBox error={garage.error || collection.error} />;
-  if (!garage.data || !collection.data || !me.data) return <ErrorBox error={new Error("Your account information could not be loaded.")} />;
+  if (garage.isLoading) return <Spinner label="Loading your loans" />;
+  if (garage.error) return <ErrorBox error={garage.error} retry={() => garage.refetch()} />;
+  if (!garage.data) return <ErrorBox error={new Error("Your account information could not be loaded.")} />;
   const current = garage.data.vehicles.filter(v => v.ownership === "current");
-  const models = collection.data.models;
-  const count = (badges: string[], type?: string) => models.filter(m => (!type || m.type === type) && m.badges.some(b => badges.includes(b))).length;
   const valued = current.filter(v => v.valuation);
   const totalValue = valued.length ? inrRange(valued.reduce((n,v) => n+v.valuation!.low,0), valued.reduce((n,v) => n+v.valuation!.high,0)) : "Not valued yet";
   return <div className="space-y-4 [&>header]:!mb-2">
-    <PageHeader title="Your Insights" sub="Vehicle finance, insurance and your next EMI." action={<Link to="/profile" className="btn-ghost !min-h-[40px] text-sm">Account</Link>} />
+    <PageHeader title="Loans" sub="Vehicle finance, insurance and your next EMI." action={<Link to="/settings" className="btn-ghost !min-h-[40px] text-sm">Settings</Link>} />
+    <ExternalOnboardingStatus />
     <section aria-label="Financial overview" className="grid grid-cols-3 gap-2">{[["Owned vehicles", String(current.length)], ["Estimated value", totalValue], ["Estimated equity", garage.data.total_equity ? inrRange(garage.data.total_equity.low, garage.data.total_equity.high) : "Unknown"]].map(([label,value]) => <div key={label} className="card !p-3"><p className="text-[10px] font-bold uppercase text-ink-mute sm:text-xs">{label}</p><p className="mt-1 break-words text-base font-black sm:text-xl">{value}</p></div>)}</section>
     {(valued.length < current.length || garage.data.total_equity?.counted !== current.length) && !!current.length && <p className="!mt-1 text-xs text-ink-mute">Totals include known values and debt only; unknown balances aren't zero.</p>}
-    <div className="grid items-start gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
       <section className="space-y-2" aria-labelledby="vehicle-finance"><h2 id="vehicle-finance" className="text-xl">Loans & insurance</h2>
         {!current.length ? <div className="card !p-4"><Link to="/garage/add" className="btn-ghost">Add your first vehicle</Link></div> : current.map((v,i) => {
           const renewal = v.reminders?.find(r => r.kind === "Insurance renewal");
@@ -48,8 +45,6 @@ export default function Insights() {
     </div>
     <section className="space-y-2"><h2 className="text-xl">Applications & lender offers</h2>{apps.error ? <ErrorBox error={apps.error} retry={() => apps.refetch()} /> : apps.isLoading ? <Spinner /> : apps.data?.items.length ? apps.data.items.map(app => <ApplicationSummary key={app.id} app={app} profile={insights.data?.financial_profiles.find(p => p.application_id === app.id)} />) : <p className="text-sm text-ink-soft">No application yet. Use Explore financing to start; offers appear after assessment.</p>}{insights.error && <ErrorBox error={insights.error} retry={() => insights.refetch()} />}</section>
     <details className="rounded-xl border border-ink/15 px-3 py-2"><summary className="cursor-pointer text-sm font-bold">Saved ownership plans {goals.data ? `(${goals.data.items.length})` : ""}</summary><div className="mt-2 space-y-2">{goals.error ? <ErrorBox error={goals.error} /> : goals.isLoading ? <Spinner /> : goals.data?.items.length ? goals.data.items.map(g => <Link key={g.id} to={`/ownership/${g.id}`} className="flex flex-wrap justify-between gap-2 rounded-lg border border-ink/10 p-2 text-sm"><span className="font-black">{g.target_model?.label ?? "Vehicle"}</span><span className="text-ink-soft">Price {inr(g.price_assumption)} · cash {inr(g.savings)} →</span></Link>) : <p className="text-sm text-ink-soft">Choose Own on a vehicle to save a plan.</p>}</div></details>
-    <details className="rounded-xl border border-ink/15 px-3 py-2"><summary className="cursor-pointer text-sm"><span className="font-bold">{me.data.display_name}</span> · {me.data.profile?.city ?? "City not provided"} <span className="text-ink-mute">· Profile details</span></summary><dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">{[["Phone / email", me.data.phone ?? me.data.email ?? "Not provided"], ["Interests", me.data.profile?.interests.join(", ") || "Not provided"]].map(([label,value]) => <div key={label}><dt className="text-xs text-ink-mute">{label}</dt><dd>{value}</dd></div>)}</dl></details>
-    <section className="space-y-2 border-t border-ink/10 pt-4"><h2 className="text-lg">Activity & rewards</h2><div className="grid grid-cols-3 gap-2 sm:grid-cols-6">{[["Cars spotted", count(["spotted"],"car")], ["All spotted", count(["spotted"])], ["Test drives", count(["test_driven"])], ["Vehicles rented", count(["rented","short_rental","long_rental"])], ["Short rentals", count(["short_rental"])], ["Long rentals", count(["long_rental"])]].map(([label,value]) => <div className="rounded-xl border border-ink/10 px-3 py-2" key={String(label)}><p className="text-[10px] text-ink-mute">{label}</p><p className="text-xl font-black text-go-dark">{value}</p></div>)}</div><p className="text-[11px] text-ink-mute">Unique models with saved, self-reported experiences.</p><details className="rounded-xl border border-ink/15 px-3 py-2"><summary className="cursor-pointer text-sm font-bold">Level {collection.data.progress.level} · {collection.data.progress.title} · {collection.data.progress.xp.toLocaleString("en-IN")} points</summary><div className="mt-3"><PointsSummary progress={collection.data.progress} /></div></details></section>
   </div>;
 }
 

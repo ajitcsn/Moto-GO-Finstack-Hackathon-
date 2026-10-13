@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { api } from "@/api/client";
+import { api, ApiError } from "@/api/client";
 import { useGarage, useGoals, useInvalidate, useScenarios } from "@/api/hooks";
 import type { Scenario } from "@/api/types";
 import { Callout, cx, ErrorBox, PageHeader, Spinner, useDebounced, useToast } from "@/components/ui";
@@ -17,7 +17,7 @@ export default function RoadTo() {
   const nav = useNavigate();
   const toast = useToast();
   const inv = useInvalidate();
-  const { data: goals, isLoading } = useGoals();
+  const { data: goals, isLoading, isFetching: loadingGoals, error: goalsError, refetch: refetchGoals } = useGoals();
   const { data: garage } = useGarage();
   const goal = goals?.items.find((g) => g.id === id);
 
@@ -44,11 +44,12 @@ export default function RoadTo() {
   });
   const finance = useMutation({
     mutationFn: () => api(`/goals/${id}`, { method: "PATCH", body: { target_model_id: goal!.target_model!.id, price_assumption: num(price) + num(costs), savings: num(savings), monthly: num(monthly), sell_current: sell ? sellId || null : null } }),
-    onSuccess: () => { inv("goals", "garage"); nav(`/finance/start?goal=${id}&tenure=${sp.get("tenure") ?? "36"}`); },
+    onSuccess: () => { inv("goals", "garage"); nav(`/explore?eligibility=${goal!.target_model!.id}&goal=${id}&rate=${rate}&tenure=${sp.get("tenure") ?? "36"}#eligibility`); },
   });
 
-  if (isLoading) return <Spinner />;
-  if (!goal) return <ErrorBox error={new Error("not found")} />;
+  if (isLoading || (!goal && loadingGoals)) return <Spinner />;
+  if (goalsError) return <ErrorBox error={goalsError} retry={() => refetchGoals()} />;
+  if (!goal?.target_model) return <><ErrorBox error={new ApiError(404, { message: "This vehicle plan is no longer available. Choose the vehicle again in Explore." })} /><Link to="/explore" className="btn-ghost mt-3">Back to Explore</Link></>;
   const current = (garage?.vehicles ?? []).filter((v) => v.ownership === "current");
   const m = goal.target_model!;
   const loanAmount = res?.scenarios.find(s => s.id === "finance")?.loan;

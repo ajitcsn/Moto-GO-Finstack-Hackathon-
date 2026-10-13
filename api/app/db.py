@@ -5,9 +5,15 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
 
-_sqlite = settings.database_url.startswith("sqlite")
+database_url = settings.database_url
+if database_url.startswith("postgres://"):
+    database_url = "postgresql+psycopg://" + database_url.removeprefix("postgres://")
+elif database_url.startswith("postgresql://"):
+    database_url = "postgresql+psycopg://" + database_url.removeprefix("postgresql://")
+
+_sqlite = database_url.startswith("sqlite")
 engine = create_engine(
-    settings.database_url,
+    database_url,
     connect_args={"check_same_thread": False, "timeout": 30} if _sqlite else {},
     pool_pre_ping=True,
 )
