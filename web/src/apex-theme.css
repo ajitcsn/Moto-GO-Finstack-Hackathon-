@@ -156,3 +156,35 @@ img.object-cover { filter: saturate(1.08) contrast(1.06); }
   #main { padding-top: 3.25rem; }
   .card { border-radius: 20px !important; }
 }
+
+/* Explore entry points: warm capture bay, cool-blue financing bay. */
+.card.explore-capture {
+  background: radial-gradient(ellipse at 0% 0%, rgba(255, 195, 91, .22), transparent 65%), linear-gradient(125deg, #62401d, #342515 72%, #292015) !important;
+  border-color: rgba(255, 195, 91, .65) !important;
+  box-shadow: 0 12px 35px rgba(0,0,0,.25), inset 4px 0 #ffc35b, inset 0 1px rgba(255,225,168,.18) !important;
+}
+.explore-capture h2 { color: #ffe3af; }
+.explore-capture .text-ink-soft { color: #f0dec2 !important; }
+.explore-capture .text-sun-dark { color: #ffda7a !important; }
+.explore-capture .btn-ghost {
+  background: rgba(39, 27, 14, .72) !important;
+  border-color: rgba(255, 210, 138, .48) !important;
+  color: #fff0d6 !important;
+}
+.explore-capture .btn-go {
+  background: linear-gradient(135deg, #ffda82, #efb546) !important;
+  color: #2d1d09 !important;
+  box-shadow: 0 5px 18px rgba(239,181,70,.2) !important;
+}
+.card.explore-eligibility {
+  background: radial-gradient(ellipse at 100% 0%, rgba(107, 166, 255, .24), transparent 65%), linear-gradient(125deg, #254478, #192f58 72%, #172745) !important;
+  border-color: rgba(125, 178, 255, .65) !important;
+  box-shadow: 0 12px 35px rgba(0,0,0,.25), inset 4px 0 #8ebeff, inset 0 1px rgba(190,217,255,.18) !important;
+}
+.explore-eligibility .text-ink-soft { color: #e1ecff !important; }
+.explore-eligibility .text-ink-mute { color: #bdcff0 !important; }
+.explore-eligibility .btn-go {
+  background: linear-gradient(135deg, #2f6fdb, #2453b8) !important;
+  color: #fff !important;
+  box-shadow: 0 5px 18px rgba(48,112,230,.28) !important;
+}

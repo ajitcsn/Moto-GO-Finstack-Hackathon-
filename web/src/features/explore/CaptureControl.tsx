@@ -19,7 +19,7 @@ export function CaptureControl({ model, selecting, onSelect }: { model?: Model; 
     mutationFn: () => api<{ duplicate: boolean; xp_awarded: number }>("/activities", { body: { model_id: model!.id, activity: "spotted" } }),
     onSuccess: result => { inv("collection", "passport", "me", "garage"); toast(result.duplicate ? "Already spotted. No repeat points." : `Sighting saved · +${result.xp_awarded} points`); setFile(null); },
   });
-  return <section id="capture" className="card mb-6 scroll-mt-24 space-y-3" aria-label="Capture a sighting">
+  return <section id="capture" className="card explore-capture mb-6 scroll-mt-24 space-y-3" aria-label="Capture a sighting">
     <div className="flex flex-wrap items-center gap-3">
       {url && <img src={url} alt="Your selected sighting" className="h-20 w-24 rounded-xl object-cover" />}
       <div className="min-w-0 flex-1"><h2 className="flex items-center gap-2"><Camera className="h-5 w-5" aria-hidden /> Capture a sighting</h2><p className="text-sm text-ink-soft">{selecting ? "Tap a vehicle in the catalogue below to identify your sighting." : model ? `Selected: ${model.label}` : "Take a photo, then choose its vehicle from the catalogue below."}</p></div>

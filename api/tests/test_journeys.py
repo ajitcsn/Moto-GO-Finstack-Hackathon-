@@ -4,6 +4,30 @@ from app.db import SessionLocal
 from app.models import ApplicationStep
 
 
+def test_dream_suggestions_are_one_premium_bike_and_car(api):
+    api.login("9812345760")
+    vehicle = api.post("/vehicles", {"type": "scooter", "model_id": "suzuki-access-125", "year": 2021, "ownership": "current"}).json()
+    suggestions = api.get("/garage").json()["suggestions"]
+    assert [m["type"] for m in suggestions] == ["bike", "car"]
+    assert all(m["price_low"] >= 2 * vehicle["valuation"]["high"] for m in suggestions)
+    assert suggestions[0]["price_low"] >= 300_000
+    assert suggestions[1]["price_low"] >= 1_200_000
+    api.post("/activities", {"model_id": suggestions[0]["id"], "activity": "saved"})
+    updated = api.get("/garage").json()["suggestions"]
+    assert [m["type"] for m in updated] == ["bike", "car"]
+    assert suggestions[0]["id"] not in [m["id"] for m in updated]
+
+
+def test_dream_suggestions_never_fall_back_to_a_cheaper_bike(api):
+    api.login("9812345761")
+    expensive = api.post("/vehicles", {"type": "car", "model_id": "mini-cooper-s", "year": date.today().year, "ownership": "current"}).json()
+    api.post("/vehicles", {"type": "scooter", "model_id": "suzuki-access-125", "year": 2021, "ownership": "current"})
+    suggestions = api.get("/garage").json()["suggestions"]
+    assert len(suggestions) <= 2
+    assert all(m["price_low"] >= 2 * expensive["valuation"]["high"] for m in suggestions)
+    assert all(m["id"] != "mini-cooper-s" for m in suggestions)
+
+
 def test_ownership_rewards_are_large_and_not_duplicated(api):
     api.login("9812345710")
     before = api.get("/me").json()["xp"]

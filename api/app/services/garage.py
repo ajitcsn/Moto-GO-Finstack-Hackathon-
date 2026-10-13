@@ -169,20 +169,30 @@ def next_goal(db: Session, user_id: str) -> dict | None:
 
 
 def roadmap_suggestions(db: Session, user_id: str) -> list[dict]:
-    """Offer a useful next step based on the most recently added current vehicle."""
-    current = (db.query(Vehicle).filter_by(user_id=user_id, ownership="current")
-               .order_by(Vehicle.created_at.desc()).first())
-    by_type = {
-        # A scooter rider's next practical aspiration: a capable ₹3–4 lakh bike.
-        "scooter": ("triumph-speed-400", "triumph-scrambler-400-x", "ktm-390-adventure"),
-        # A bike rider's next practical step: an accessible small car.
-        "bike": ("maruti-suzuki-swift", "tata-punch", "hyundai-i20"),
-        # A car owner can consider a roomier or electric step-up.
-        "car": ("hyundai-creta", "tata-nexon-ev", "mahindra-scorpio-n"),
-    }
-    ids = by_type.get(current.type if current else "", ("maruti-suzuki-swift", "triumph-speed-400", "tata-punch"))
-    found = {m.id: m for m in db.query(CatalogueModel).filter(CatalogueModel.id.in_(ids)).all()}
-    return [ser_model(found[mid]) for mid in ids if mid in found]
+    """One aspirational bike and car, never a cheaper fallback or an owned model."""
+    current = db.query(Vehicle).filter_by(user_id=user_id, ownership="current").all()
+    excluded = {v.model_id for v in current if v.model_id}
+    excluded.update(a.model_id for a in db.query(Activity).filter_by(user_id=user_id, kind="saved"))
+    excluded.update(g.target_model_id for g in db.query(Goal).filter_by(user_id=user_id))
+    values = []
+    for vehicle in current:
+        valuation = latest_valuation(db, vehicle.id)
+        model = db.get(CatalogueModel, vehicle.model_id) if vehicle.model_id else None
+        if valuation:
+            values.append(valuation.high)
+        elif model:
+            values.append(model.price_high)
+    baseline = max(values, default=0)
+    suggestions = []
+    for kind, floor in (("bike", 300_000), ("car", 1_200_000)):
+        candidate = (db.query(CatalogueModel)
+                     .filter(CatalogueModel.type == kind,
+                             CatalogueModel.price_low >= max(baseline * 2, floor),
+                             CatalogueModel.id.notin_(excluded))
+                     .order_by(CatalogueModel.price_low, CatalogueModel.id).first())
+        if candidate:
+            suggestions.append(ser_model(candidate))
+    return suggestions
 
 
 def care_task(db: Session, user_id: str) -> dict | None:
