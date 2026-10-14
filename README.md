@@ -40,17 +40,17 @@ Moto Go imagines a more connected alternative. It should help someone answer que
 - What will financing cost, what information is required, and why?
 - Where am I in the process—and what happens next?
 
-The long-term goal is not to nudge a person toward a transaction. It is to give them a useful, trustworthy picture of their automotive life and the confidence to choose their next move.
+The long-term goal is not to nudge a person toward a transaction. It is to give people a useful, trustworthy picture of their automotive life and the confidence to choose their next move.
 
 ## Built with care for trust
 
-- Vehicle values always include their source, range, and “as of” date.
+- Vehicle values include their source, range, and “as of” date.
 - Unknown debt remains unknown; it is never presented as zero.
 - Finance information is not used to award collection progress.
 - Consents record the purpose, recipient, text version, and time, and can be withdrawn.
 - Sensitive information is encrypted at rest and masked in API responses.
 - Authentication uses secure HTTP-only cookies; personal data is not stored in browser storage.
-- Every provider interaction is idempotent and every application transition is recorded, making the journey inspectable and recoverable.
+- Every provider interaction is idempotent and every application transition is recorded.
 
 ## Try the demo
 
