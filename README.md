@@ -1,110 +1,130 @@
 # Moto Go
 
-Your automotive life, mapped: a garage you can maintain, a collection you can explore, and a calm, opt-in path to the next vehicle.
-React + TypeScript frontend, Python FastAPI backend, every outside service behind a mock-or-live adapter.
-This repo implements the **hackathon scope (P0)** of the PRD, plus the P1 items that were cheap (care log, profile/consents, ops console).
+**Your automotive life, mapped.**
 
-> Every integration runs through a mock adapter and shows a **Demo** badge. No real identity data, no credit enquiries.
+Moto Go is a product concept for people who want one calm place to manage the vehicles they own, discover what they might own next, and make a well-informed plan to get there.
 
-## Run it
+It combines a personal garage, a vehicle collection, ownership planning, and an intentionally transparent financing journey. The experience is designed around choice: browse without pressure, understand the numbers before acting, and share only the information needed for a specific purpose.
 
-Needs Python 3.11+ and Node 20+. No Docker, Postgres, Redis or S3 needed for the demo (SQLite + local file storage).
+> This repository is a working demo. Every external integration runs in safe mock mode and is visibly marked **Demo**. It never performs a real identity verification, bank connection, credit enquiry, or loan application.
+
+## What is in Moto Go
+
+### A garage that makes ownership clearer
+
+Add and maintain the vehicles in your life. Moto Go brings together an estimated value range, active loan information, equity, care reminders, and a clear status for each vehicle.
+
+### An automotive collection to explore
+
+Browse models, save the ones that catch your eye, and build a record of vehicles you have spotted, ridden, driven, rented, or test-driven. The collection is deliberately separate from borrowing and financial data.
+
+### A path to the next vehicle
+
+Set a goal and compare practical routes: saving, buying used, selling your current vehicle, or financing. The product makes assumptions visible—including the purchase gap, monthly cost, estimated proceeds, and current equity—so a plan is understandable before it is acted on.
+
+### A consent-led finance experience
+
+When someone chooses to explore financing, Moto Go introduces the lender and purpose before asking for information. It guides the applicant through KYC, credit consent, bank linking, documents, offers, the Key Fact Statement, mandate, e-signing, and disbursal.
+
+The demo also shows realistic outcomes: an approval, a request for additional documents, a mismatch that needs attention, or a decline with a clear way to recover and resume.
+
+## Product vision
+
+Vehicle ownership is usually fragmented: service history is in one place, loans in another, listings somewhere else, and the next purchase decision is a collection of tabs, assumptions, and anxiety.
+
+Moto Go imagines a more connected alternative. It should help someone answer questions such as:
+
+- What do I own, and what needs attention?
+- What is my current vehicle likely worth?
+- If I sell it, what could I realistically afford next?
+- What will financing cost, what information is required, and why?
+- Where am I in the process—and what happens next?
+
+The long-term goal is not to nudge a person toward a transaction. It is to give them a useful, trustworthy picture of their automotive life and the confidence to choose their next move.
+
+## Built with care for trust
+
+- Vehicle values always include their source, range, and “as of” date.
+- Unknown debt remains unknown; it is never presented as zero.
+- Finance information is not used to award collection progress.
+- Consents record the purpose, recipient, text version, and time, and can be withdrawn.
+- Sensitive information is encrypted at rest and masked in API responses.
+- Authentication uses secure HTTP-only cookies; personal data is not stored in browser storage.
+- Every provider interaction is idempotent and every application transition is recorded, making the journey inspectable and recoverable.
+
+## Try the demo
+
+Moto Go needs **Python 3.11+** and **Node.js 20+**. The default demo uses SQLite and local file storage—no Docker, Postgres, Redis, or cloud account required.
 
 ```bash
-# 1. API  (http://localhost:8000, docs at /docs)
+# Terminal 1 — API at http://localhost:8000 (docs at /docs)
 cd api
 python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt      # Windows;  .venv/bin/python on macOS/Linux
-.venv/Scripts/python -m uvicorn app.main:app --reload --port 8000
+# Windows: .venv\Scripts\python -m pip install -r requirements.txt
+# macOS/Linux:
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m uvicorn app.main:app --reload --port 8000
 
-# 2. Web  (http://localhost:5173, proxies /api to :8000)
+# Terminal 2 — web app at http://localhost:5173
 cd web
 npm install
 npm run dev
 ```
 
-Pilot-shaped stack (Postgres 16, Redis, MinIO, nginx): `docker compose -f infra/docker-compose.yml up --build`, then open <http://localhost:8080>.
-
-### Demo accounts (OTP is always `123456`)
-
-| Phone | Who | Use it for |
-|---|---|---|
-| `9999900001` | Demo Owner | Suzuki Access 125 on a small loan, a care reminder, equity range |
-| `9999900002` | Demo Enthusiast | Empty garage: onboarding, collection, Road-to, finance |
-| `9999900009` | Demo Ops | Read-only ops console at `/ops` |
-
-Any other valid Indian mobile number creates a new account.
-
-### Steering the finance demo
-
-| You enter | Outcome |
-|---|---|
-| Loan amount ≤ ₹1,50,000 | Approved, then 3 offers |
-| ₹1,50,001 – ₹2,50,000 | Lender asks for salary slip + address proof (the F11 loop), then approves |
-| Above ₹2,50,000 | Declined, lands on the shared recovery screen (X01) |
-| PAN ending `F` (any letter other than `X`) | KYC verifies |
-| PAN ending `X` | Name mismatch: asks for a PAN card upload (F04) |
-| KYC method "Video KYC" | Also asks for a selfie (F04) |
-| Upload filename contains `blurry` / `expired` / `wrongtype` | Rejected with a reason and alternatives |
-| Upload filename contains `mismatch` | Needs attention (name does not match), requirement stays open |
-| Applicant type other than "Salaried", or a car | Blocked at F01 → X01 |
-| "No thanks" on the credit report consent | X01 with "Resume at the credit report step" |
-
-### Five-minute demo path
-
-Sign in as **Demo Owner** → Garage shows the Access with value range, loan and equity (source, confidence, as-of) → Explore, spot/save the Hunter 350 → Roadmap, set a 6-month Road to Hunter → compare saving, used, sell-and-buy and financing → **Explore financing** → complete KYC, credit consent, bank link (Demo AA), work and dealer quote → force one missing-document loop (amount ₹2,00,000) → compare offers, read the KFS, accept → mandate, e-sign → disbursal → back in the Garage the Hunter shows **delivery pending**.
-
-## Tests
+For the pilot-shaped stack (Postgres, Redis, MinIO, nginx), run:
 
 ```bash
-cd api && .venv/Scripts/python -m pytest -q          # 36 tests: scenario maths, state machine, adapter contracts, API, finance flows
-cd web && npm run typecheck && npm run e2e           # Playwright: guest explore, onboarding, happy path, F11 loop, declined, consent decline
+docker compose -f infra/docker-compose.yml up --build
 ```
 
-The e2e suite starts its own API (port 8100, fresh DB) and web server (port 5180). Run `npx playwright install chromium` once.
+Then open <http://localhost:8080>.
 
-## How it is built
+### Demo accounts
 
+The OTP for every demo account is `123456`.
+
+| Phone | Account | Suggested exploration |
+|---|---|---|
+| `9999900001` | Demo Owner | Start in the Garage: a Suzuki Access 125, a small loan, care reminder, and equity range. |
+| `9999900002` | Demo Enthusiast | Start with onboarding, explore the collection, create a Road to goal, and try financing. |
+| `9999900009` | Demo Ops | View the read-only operations console at `/ops`. |
+
+Any other valid Indian mobile number creates a new demo account.
+
+### A five-minute walkthrough
+
+1. Sign in as **Demo Owner** and visit the Garage.
+2. Explore the Hunter 350, then save or spot it.
+3. Create a six-month Road to Hunter goal.
+4. Compare saving, buying used, selling-and-buying, and financing.
+5. Choose **Explore financing** and continue through the guided demo journey.
+
+To experience an additional-document loop, use a loan amount between **₹1,50,001 and ₹2,50,000**. Amounts of **₹1,50,000 or less** receive three demo offers; higher amounts are declined and routed to a recovery screen.
+
+## Architecture
+
+Moto Go is a React + TypeScript frontend and a Python FastAPI backend. The product’s provider boundaries are explicit: each external service is represented by an adapter that can run in mock mode for demos or be replaced with a live, contract-compatible implementation later.
+
+```text
+web/       React, TypeScript, Vite, React Query
+api/       FastAPI, SQLAlchemy, SQLite by default
+infra/     Docker Compose for Postgres, Redis, MinIO, and nginx
 ```
-moto-go/
-  api/                  FastAPI service
-    app/routers/        auth, users (me/consents/export), garage, explore (catalogue/collection/goals), applications, documents, misc (webhooks/ops/mock provider)
-    app/adapters/       base.py (Protocols) · mock.py · live.py (shells) · __init__.py (ADAPTER_<NAME>=mock|live)
-    app/services/       finance.py (state machine orchestration) · garage.py · core.py (consents, events, idempotency, jobs)
-    app/workers/        documents.py (the upload pipeline)
-    app/finance_config.py   lender-configurable step schemas (F01-F15)
-    app/forms.py        Pydantic validation generated from that same spec
-    app/scenarios.py    EMI, APR, equity, purchase gap, scenarios (pure, unit-tested)
-    migrations/         Alembic (initial schema)
-  web/src/
-    features/           onboarding, garage, explore, roadmap, finance, profile
-    components/         DynamicForm (renders any step from its spec), UploadField, AppShell, ui kit
-    lib/                zodFromSpec (client schema from the same spec), upload engine, ₹ formatting
-  infra/docker-compose.yml
+
+Core flows include OTP authentication, consent records, garage and collection management, vehicle goals and scenarios, a configurable finance state machine, document uploads, and server-sent application updates.
+
+## Development checks
+
+```bash
+# API tests
+cd api && .venv/bin/python -m pytest -q
+
+# Frontend type check and end-to-end tests
+cd web && npm run typecheck && npm run e2e
 ```
 
-Key decisions:
+The end-to-end suite starts an isolated API on port `8100` and web server on port `5180`. Install Playwright’s browser once with `npx playwright install chromium`.
 
-- **Finance forms come from config.** `GET /applications/{id}/steps/{step}/schema` returns the field list, consents and cross-field rules. The browser builds a Zod schema from it; the server builds Pydantic from the same spec and validates again. Changing a lender's fields is a backend-only change.
-- **Two onboardings.** Consumer onboarding never asks for PAN or consent to a bureau. Finance starts only after "Explore financing", names the lender and purpose first, and asks only for what the lender rules flag as missing.
-- **Consents are records**: purpose, recipient, text version, time. Withdrawing one (Profile) blocks later provider calls for that purpose (the underwriting job re-checks).
-- **State machine** in `state_machine.py`, every transition written to `events` and streamed over SSE. Provider timeouts are `ProviderPending`, never a blank screen.
-- **Uploads**: client check and SHA-256 → presigned PUT → `complete` verifies the hash → worker does magic-byte/PDF-password/image checks, metadata strip, parse, name match → `verified | needs_attention | rejected`. Mock mode scripts outcomes by filename after a short delay.
-- **Security**: httpOnly SameSite=Lax cookies (access 15 min + refresh), double-submit CSRF token on writes, PAN and account numbers encrypted with Fernet at field level and masked in every API response, all queries scoped by `user_id`, ops console role-gated and audit-logged, OTP rate limits and 3-strikes lock, HMAC-verified webhooks with replay protection, `Idempotency-Key` on provider-calling writes. No PII in browser storage (the upload queue holds file names and status only).
-- **No XP for borrowing.** Collection XP: spotted +10, ridden/driven/rented +25, test-driven +25, once per model (and category); saving and past ownership earn nothing; finance data never touches the collection.
-- **Values carry source, range and as-of.** Unknown debt means equity unknown, never zero; negative equity is shown as an extra funding need.
+## Important note
 
-### Going live
-
-Flip an adapter with `ADAPTER_KYC=live` etc. The live classes in `app/adapters/live.py` are shells that raise `ProviderNotConfigured` until the FinStack/lender credentials and contracts exist; the contract tests in `api/tests/test_adapters.py` are written to run against both implementations. Swap the in-process job runner (`services/core.run_job`) for RQ/Celery with the same signature, and `ADAPTER_STORAGE=s3` (boto3) for presigned S3 PUTs.
-
-## Deliberate differences from the PRD
-
-- Python 3.11 is what was available here (3.12 is fine). SQLite/local disk by default; Postgres 16, MinIO and Redis are wired in the compose file and supported by config.
-- The in-process worker replaces Celery/RQ, and pypdf + Pillow replace pdfplumber/PyMuPDF/Tesseract. Malware scanning (ClamAV) and OCR are marked "skipped/mock" in the pipeline.
-- The TypeScript API client is hand-written (`web/src/api/types.ts`) instead of generated from OpenAPI.
-- Capture is P0 manual-pick only: the photo is previewed on device and never uploaded; server-side redaction is not built.
-- Experiences is the static partner-handoff screen, with no invented bookings.
-- Not built: P2 items, Hindi strings, Sentry, reminders delivery, scheduled retention purge (the `purge_expired` job exists, but nothing schedules it).
-
-*This is a demo and not a compliance certification. RBI Digital Lending obligations (KFS before acceptance, named lender, cooling-off, grievance officer, no pass-through of funds) are reflected in the UX, but must be mapped with the chosen lender before any pilot.*
+Moto Go is a prototype, not a compliance certification or a live lending product. Before any real-world launch, the legal, operational, and technical requirements of the selected lender and jurisdiction must be reviewed and implemented with the relevant partners.
